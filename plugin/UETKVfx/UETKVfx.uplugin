@@ -1,0 +1,30 @@
+{
+	"FileVersion": 3,
+	"Version": 1,
+	"VersionName": "1.0",
+	"FriendlyName": "UnrealToolkit VFX",
+	"Description": "Editor-only scripting layer for Niagara: build systems, emitters, modules, inputs and renderers from Python, dump a system's stack as JSON, and render preview contact sheets offscreen. Driven by UnrealToolkit (ue.py vfx).",
+	"Category": "Editor",
+	"CreatedBy": "UnrealToolkit",
+	"CanContainContent": false,
+	"IsBetaVersion": false,
+	"Installed": false,
+	"EnabledByDefault": true,
+	"Modules": [
+		{
+			"Name": "UETKVfx",
+			"Type": "Editor",
+			"LoadingPhase": "Default"
+		}
+	],
+	"Plugins": [
+		{
+			"Name": "Niagara",
+			"Enabled": true
+		},
+		{
+			"Name": "UETKEditor",
+			"Enabled": true
+		}
+	]
+}
