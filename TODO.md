@@ -4,6 +4,13 @@ What UnrealToolkit should cover next, in order. The toolkit is for anyone drivin
 agents, so each item is written for projects in general. Tick an item when it lands, and put what it taught into
 the docs.
 
+**Two kinds of work.** Sections 1 to 3 need Unreal Engine installed: they're checked in a running editor. Section 4
+holds small tasks that don't (tests of the engine-free code, CI, packaging, docs), each doable with Python 3 and git.
+To take one, open an issue or a draft pull request named after its number (N1, N2...) so nobody else starts it.
+
+**Next up.** With Unreal Engine: `scripts/selftest.py` (section 3, "Tests"), then Unreal Insights. Without it: N1 and
+N2 (the test setup and CI), then any other task in section 4.
+
 **How new features should work** (the same way `vfx` and `bpedit` already do):
 - An `editor/` Python helper, plus a `ue.py` command when it's useful from the shell.
 - A spec goes in and an asset comes out. A `describe` reads any asset of that kind back as text, including ones the
@@ -72,8 +79,8 @@ Forced keys reach gameplay input, not a focused widget, so tests can't drive men
 - `ueh.ui()`: the live widget tree of the PIE or game world (class, name, text, visibility, on-screen rect).
 - `ui_click(label_or_name)`, `ui_type(widget, text)`, `ui_text(name)`, and `yield ueh.ui_wait(label)` in scenarios.
   They work in `ue.py net` game processes too (`--instance`).
-- Later: edit a Widget Blueprint's designer tree (add and nest widgets, slot and layout properties, bindings) through
-  the UETKEditor plugin, as `bpedit` does for graphs.
+- A Widget Blueprint's designer tree from a spec (add and nest widgets, slot and layout properties, bindings): done
+  as `ui.build` / `ue.py ui create`.
 - **Done when:** a scenario starts PIE, opens a menu, clicks a button by its label and checks what happened, with the
   editor in the background.
 
@@ -154,7 +161,17 @@ Bigger or more specialized, later:
 - [ ] Localization: gather, export and import PO files, compile
 - [ ] Data: curve tables and data assets from JSON (data tables already work)
 
-## 3. The toolkit itself
+## 3. The toolkit itself (needs Unreal Engine)
+
+The parts that don't need an engine are in section 4.
+
+### Tests
+- [ ] **`scripts/selftest.py`** (next): runs every command against an engine template project on a given engine
+  version and reports pass or fail. Run it on every supported version before a release. It also settles the untried
+  cases (VFX previews on 5.6 and 5.7, level Blueprint export), and would have caught `ueh.fix_redirectors` calling an
+  API Python doesn't have.
+- [ ] **Sample files for the engine-free tests:** a CSV profiler capture (`ue.py perf run`) and a `bpdump` export of a
+  template project's Blueprints, with local paths scrubbed, in `tests/fixtures/`. N10 and N11 wait for these.
 
 ### Going public (done 2026-11-24)
 - [x] MIT `LICENSE`.
@@ -165,28 +182,92 @@ Bigger or more specialized, later:
   whose header is private).
 - [x] The bridge's trust model in the README ("Security").
 - [x] README quickstart, supported versions and platform; `CONTRIBUTING.md`, `CHANGELOG.md`, the `v0.1.0` tag.
-- [ ] Issue templates.
 - [ ] A per-session token in bridge requests, so only the client that started an editor can drive it.
+- Issue templates: N21 in section 4.
 
 ### Install and reach
-- [ ] **Installable package:** `pip install` or `pipx` with a `ue` command, still standard-library only.
-- [ ] **MCP server** over the same commands, so agents in any MCP client get typed tools instead of shell lines. Ship
-  a ready-made `CLAUDE.md` / `AGENTS.md` snippet and a Claude Code skill for projects to copy.
-- [ ] **Linux and macOS.** Engine discovery without the registry, editor executables and build scripts, process
-  discovery, screenshots (`uetk/winshot.py` is Windows-only). Live Coding is Windows-only.
+- [ ] **MCP server** over the same commands, so agents in any MCP client get typed tools instead of shell lines. (The
+  instructions snippet and the Claude Code skill are N20 in section 4.)
+- [ ] **Linux and macOS.** Editor executables and build scripts, process discovery, screenshots (`uetk/winshot.py` is
+  Windows-only), checked on a real install. Live Coding is Windows-only. Starts after N3 (imports that work off
+  Windows).
 - [ ] **Engine versions.** State the supported range (5.6–5.8 so far) and decide how far back to go.
 - [ ] **Blueprint-only projects.** `editor start` fails with "No Editor target"; launch the editor directly instead.
-- [ ] **Plugin versions.** `plugins status` says when a project's copy of UETKEditor or UETKVfx is older than the
-  toolkit's.
+
+## 4. Small tasks that don't need Unreal Engine
+
+Each one needs only Python 3 and git, and is checked without an engine. Tests use the standard library's `unittest`,
+so the toolkit keeps no dependencies. The code in `editor/` runs inside Unreal and imports `unreal`, so it can't be
+imported outside it, except `editor/scenario.py`. Code in `uetk/` and `ue.py` is plain Python.
+
+### Tests and CI
+- [ ] **N1. Test setup.** A `tests/` folder run by `python -m unittest discover -s tests`, a first test
+  (`uetk.plugins.with_dependencies` is an easy one), and a "Running the tests" paragraph in `CONTRIBUTING.md` in place
+  of "There's no automated test suite yet". Done when the command passes in a fresh clone.
+- [ ] **N2. GitHub Actions.** `.github/workflows/tests.yml`: on every push and pull request, on `windows-latest` with
+  Python 3.10 and 3.13, run the tests and `python -m compileall -q ue.py uetk editor scripts` (that catches syntax
+  errors in the editor-side code the tests can't import). Done when a pull request shows the check. After N1.
+- [ ] **N3. Importable off Windows.** `uetk/project.py`, `uetk/bridge.py`, `uetk/procs.py` and `uetk/winshot.py`
+  import `winreg` and `ctypes.windll` at the top, so `import ue` fails on Linux and macOS. Import them inside the
+  functions that use them, or behind `sys.platform == "win32"`, and add `ubuntu-latest` to the CI matrix. Done when
+  the tests pass on Linux and nothing changes on Windows. After N2.
+- [ ] **N4. Tests for `uetk/logs.py`:** `verbosity`, `category` and `is_problem` on sample lines
+  (`[2026.11.24-14.49.05:592][  0]LogWindows: Error: ...`), Display, Warning, Error and Fatal lines, and lines without
+  a timestamp.
+- [ ] **N5. Tests for `ue.py`'s helpers:** `_undo_msys_paths` (fake Git Bash with `MSYSTEM` and `EXEPATH` pointing at a
+  temp folder that has `usr/bin`), `_collapse_repeats`, `_dumps` (arrays of numbers stay on one line) and
+  `_parse_params`; and every command's `--help` parses (`build_parser()`).
+- [ ] **N6. Tests for `editor/scenario.py`:** `has_top_level_yield`, `wrap_scenario` and `top_level_bindings` on small
+  scripts; a `Task` stepping through `Frames`, `Seconds` (with a fake clock) and `Until`; an exception inside a
+  scenario reaching the caller.
+- [ ] **N7. Tests for `uetk/state.py`:** `snapshot_save`, `snapshot_diff` and `snapshot_restore` in a temp folder (a
+  stub with the `root` and `out_dir` attributes a `Project` has), and `ini_get`, `ini_set` and `ini_remove` keeping a
+  file's encoding (UTF-16 ini files exist) and line endings.
+- [ ] **N8. Tests for `uetk/plugins.py`:** `install` into a temp project adds, updates and removes files; `status`
+  reports `up_to_date` before and after a source file changes.
+- [ ] **N9. Tests for `uetk/project.py`:** `_find_uproject` from a subfolder, with `--project` (a file or a folder),
+  with `UETK_PROJECT`, and the error when there's none; `_engine_from_launcher_manifest` with a fake
+  `LauncherInstalled.dat` (point `PROGRAMDATA` at a temp folder).
+- [ ] **N10. Tests for `uetk/perf.py`:** `parse_csv` (each row is a prefix of the header written at the end),
+  `summarize` and `format_compare`. Waits for the sample capture (section 3, "Tests").
+- [ ] **N11. Tests for `uetk/bpdump.py`:** `parse_t3d` and `condense` on exported Blueprints, compared with the
+  expected `.txt` output. Waits for the sample export (section 3, "Tests").
+
+### Toolkit
+- [ ] **N12. Warn about an out-of-date plugin.** When a project's copy of UETKEditor or UETKVfx differs from the
+  toolkit's (`uetk.plugins.status(project)[name]["up_to_date"]` is false), `ue.py editor start`, `ue.py build` and
+  `ue.py py` print one line: "UETKEditor in this project is older than the toolkit's: run `ue.py plugins install`,
+  then `ue.py build`". Today a stale copy shows up as a missing function deep inside a call. Test it with a temp
+  project folder.
+- [ ] **N13. Version number.** `__version__` in `uetk/__init__.py`, `ue.py --version` prints it, and a test checks it
+  against the newest version heading in `CHANGELOG.md`.
+- [ ] **N14. Installable package.** A `pyproject.toml` (setuptools, no runtime dependencies) so that
+  `pipx install git+https://github.com/zeagleee/UnrealToolkit` gives a `ue` command, with `editor/`, `plugin/` and
+  `scripts/` shipped too (the code finds them relative to `uetk/`: `project.EDITOR_PY_DIR`, `plugins.ROOT`). Done
+  when, in a clean virtual environment, `pipx install .` works, `ue --help` lists the commands, and `ue info` outside a
+  project prints the "No .uproject" error. Add it to the README's quickstart.
 
 ### Docs
-- [ ] The README holds the commands and the quickstart, and each feature's section moves to `docs/`. The general Unreal
-  lessons already did (`docs/unreal-notes.md`).
-- [ ] A command reference generated from `ue.py`'s argparse and `ueh.help()`.
+- [ ] **N15. Command reference.** `scripts/gen_docs.py` writes `docs/commands.md` from `ue.py`'s argparse (every
+  command with its arguments and help), and CI fails when the file is out of date.
+- [ ] **N16. Helper reference.** The same script writes `docs/helpers.md`: the public functions of `editor/ueh.py`,
+  `bpedit.py`, `mat.py`, `inputs.py`, `importer.py`, `ui.py` and `validate.py` with signatures and docstrings, read
+  with `ast` (those modules import `unreal`, which only exists inside the editor).
+- [ ] **N17 to N19. Split the README** (848 lines) into `docs/`. The README keeps the overview, quickstart, security,
+  the commands table, the rules of thumb and the layout, and links to each page. Move the text as it is, and fix the
+  links that pointed within the README ("below, ..."). One pull request each:
+  - [ ] N17: "Materials", "Enhanced Input", "Menus and HUD" to `docs/materials.md`, `docs/input.md`, `docs/ui.md`.
+  - [ ] N18: "Spawning into the running game", "Importing", "Validating the project" to `docs/spawning.md`,
+    `docs/importing.md`, `docs/validation.md`.
+  - [ ] N19: "VFX", "Multiplayer sessions", "Performance runs", "Editing Blueprints", "Reviewing Blueprints" and
+    "Offscreen renders", one page each.
+- [ ] **N20. Instructions for agents.** `docs/agents.md`: a block projects can paste into their `CLAUDE.md` or
+  `AGENTS.md` (where the toolkit is, the commands to reach for first, the rules of thumb agents trip on), and a Claude
+  Code skill with the same content in `skills/unreal-toolkit/SKILL.md`. Written from the README.
 
-### Tests
-- [ ] Unit tests for the parts that don't need an engine (scenario rewriting, perf CSV parsing, bpdump condensing,
-  project and engine discovery), run by GitHub Actions.
-- [ ] `scripts/selftest.py`: runs every command against an engine template project on a given engine version and
-  reports pass or fail. Run it on every supported version before a release. It also settles the untried cases
-  (VFX previews on 5.6 and 5.7, level Blueprint export).
+### Repository
+- [ ] **N21. Issue and pull request templates.** `.github/ISSUE_TEMPLATE/`: a bug report (engine version and
+  `ue.py info` output, the command, what came back, the log excerpt `CONTRIBUTING.md` asks for) and a feature request.
+  `.github/pull_request_template.md` with boxes for "checked on 5.6 / 5.7 / 5.8" and "windowed / headless".
+- [ ] **N22. Release 0.2.0,** once the maintainer agrees: `CHANGELOG.md`'s "Unreleased" becomes "0.2.0 (date)", tag
+  `v0.2.0`, and a GitHub release with those notes.

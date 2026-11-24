@@ -1,6 +1,8 @@
 # Contributing
 
-Issues and pull requests are welcome. What's planned is in [TODO.md](TODO.md).
+Issues and pull requests are welcome. What's planned is in [TODO.md](TODO.md). Its section 4 lists small tasks that
+don't need Unreal Engine installed (tests, CI, packaging, docs); open an issue or a draft pull request named after a
+task's number (N1, N2...) to take it.
 
 ## Reporting a problem
 
@@ -20,7 +22,8 @@ Give the engine version (`ue.py info` prints it), the command you ran, and what 
 
 ## Checking a change
 
-There's no automated test suite yet (see TODO.md, "Tests"). Before a pull request:
+There's no automated test suite yet (TODO.md, N1 and N2 in section 4). Before a pull request that touches the engine
+side:
 
 1. Make a project from a stock engine template (`scripts/new_from_template.py`), then `ue.py plugins install` and
    `ue.py build`.
