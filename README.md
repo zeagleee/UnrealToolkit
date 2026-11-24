@@ -22,9 +22,10 @@ edges. MIT licensed.
    python C:/Tools/UnrealToolkit/ue.py build --restart       #   material reading, Niagara, import helpers
    ```
 3. For editors you start yourself (launcher, double-clicked `.uproject`), run `ue.py bridge install` once. Read
-   "Security" first.
+   [Security](#security) first.
 4. Tell your agent about it, e.g. in the project's `CLAUDE.md` or `AGENTS.md`: "Drive Unreal with
    `python C:/Tools/UnrealToolkit/ue.py`; its commands are in C:/Tools/UnrealToolkit/README.md."
+   [docs/agents.md](docs/agents.md) has a fuller block to paste, and a Claude Code skill.
 
 The engine is found from the project's `EngineAssociation` (registry / Epic launcher manifest); override with
 `UETK_ENGINE_ROOT`. `ue.py -h` and `ue.py <command> -h` list every option. Below, `ue.py` means
@@ -835,6 +836,7 @@ cost and scalability, networking, online sessions, project setup, packaging, imp
 | `uetk/plugins.py` | system Python | `ue.py plugins install/status`: copies the toolkit's plugins into a project; warns when a project's copy is out of date |
 | `scripts/` | system Python | `new_from_template.py` (projects from engine templates), `gen_docs.py` (the generated reference pages), `net_smoke_test.py` |
 | `tests/` | system Python | the engine-free tests: `python -m unittest discover -s tests` |
+| `skills/unreal-toolkit/` | | a Claude Code skill with the agent instructions |
 | `pyproject.toml` | | packaging: `pipx install` gives a `ue` command |
 
 ## How the bridge works

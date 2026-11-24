@@ -261,7 +261,7 @@ imported outside it, except `editor/scenario.py`. Code in `uetk/` and `ue.py` is
     `docs/importing.md`, `docs/validation.md`.
   - [ ] N19: "VFX", "Multiplayer sessions", "Performance runs", "Editing Blueprints", "Reviewing Blueprints" and
     "Offscreen renders", one page each.
-- [ ] **N20. Instructions for agents.** `docs/agents.md`: a block projects can paste into their `CLAUDE.md` or
+- [x] **N20. Instructions for agents.** Done 2026-11-24: `docs/agents.md` and `skills/unreal-toolkit/SKILL.md`; `tests/test_docs.py` keeps them the same. `docs/agents.md`: a block projects can paste into their `CLAUDE.md` or
   `AGENTS.md` (where the toolkit is, the commands to reach for first, the rules of thumb agents trip on), and a Claude
   Code skill with the same content in `skills/unreal-toolkit/SKILL.md`. Written from the README.
 

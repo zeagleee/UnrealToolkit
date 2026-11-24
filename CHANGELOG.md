@@ -29,6 +29,8 @@
 - Installable with pipx: `pipx install git+https://github.com/zeagleee/UnrealToolkit` gives a `ue` command.
 - Generated references: `docs/commands.md` (every command) and `docs/helpers.md` (every editor-side helper),
   written by `scripts/gen_docs.py`; CI fails when they are out of date.
+- `docs/agents.md`: a block to paste into a project's `CLAUDE.md` or `AGENTS.md`, and the same text as a Claude Code
+  skill (`skills/unreal-toolkit/`).
 
 ## 0.1.0 (2026-11-24)
 
