@@ -1,13 +1,15 @@
-"""ue.py's helpers and argument parsing (N5)."""
+"""ue.py's helpers and argument parsing (N5, N13)."""
 import contextlib
 import io
 import json
 import os
+import re
 import unittest
 
 import support  # noqa: F401  (sys.path)
-from support import TempDir, env
+from support import ROOT, TempDir, env
 import ue
+import uetk
 
 
 class UndoMsysPathsTest(unittest.TestCase):
@@ -138,6 +140,21 @@ class ParserTest(unittest.TestCase):
         for name, sub in self.commands(ue.build_parser()).items():
             with self.subTest(command=name):
                 self.assertTrue(callable(sub.get_default("fn")))
+
+
+class VersionTest(unittest.TestCase):
+    def test_version_flag(self):
+        out = io.StringIO()
+        with contextlib.redirect_stdout(out), self.assertRaises(SystemExit) as stop:
+            ue.build_parser().parse_args(["--version"])
+        self.assertEqual(stop.exception.code, 0)
+        self.assertEqual(out.getvalue().strip(), f"UnrealToolkit {uetk.__version__}")
+
+    def test_matches_newest_changelog_version(self):
+        text = (ROOT / "CHANGELOG.md").read_text(encoding="utf-8")
+        versions = re.findall(r"^## (\d+\.\d+\.\d+)\b", text, re.M)
+        self.assertTrue(versions, "CHANGELOG.md has no '## X.Y.Z' heading")
+        self.assertEqual(uetk.__version__, versions[0])
 
 
 class MainTest(unittest.TestCase):

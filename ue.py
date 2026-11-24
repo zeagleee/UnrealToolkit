@@ -29,7 +29,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from uetk import build, editor, logs, procs, state  # noqa: E402
+from uetk import __version__, build, editor, logs, procs, state  # noqa: E402
 from uetk.bridge import Bridge, install, is_installed, run_headless, uninstall  # noqa: E402
 from uetk.project import Project, ToolkitError  # noqa: E402
 
@@ -110,7 +110,16 @@ def cmd_info(p, args):
     return 0
 
 
+def _warn_stale_plugins(p):
+    """N12: a project's copy of the toolkit's plugins that differs from the toolkit's shows up as a missing function
+    deep inside a call; say so up front instead."""
+    from uetk import plugins
+    for line in plugins.stale_warnings(p):
+        print(f"warning: {line}", file=sys.stderr)
+
+
 def cmd_build(p, args):
+    _warn_stale_plugins(p)
     target = {"editor": p.editor_target, "game": p.game_target}.get(args.target, args.target)
     restarted_level = None
     keep_no_throttle = state.throttle_claimed(p)
@@ -155,6 +164,8 @@ def cmd_package(p, args):
 
 
 def cmd_editor(p, args):
+    if args.action in ("start", "restart"):
+        _warn_stale_plugins(p)
     if args.action == "start":
         editor.start(p, map_path=args.map, do_build=not args.no_build, wait=not args.no_wait, timeout=args.timeout,
                      no_throttle=args.no_throttle)
@@ -182,6 +193,7 @@ def cmd_kill(p, args):
 
 def cmd_py(p, args):
     code = _read_code(args)
+    _warn_stale_plugins(p)
     if args.headless:
         if procs.editor_pids(p) and not args.force:
             raise ToolkitError("The editor is running; a headless run could fight it over asset files. "
@@ -811,6 +823,7 @@ def cmd_bridge(p, args):
 
 def build_parser():
     parser = argparse.ArgumentParser(prog="ue.py", description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser.add_argument("--version", action="version", version=f"UnrealToolkit {__version__}")
     parser.add_argument("-p", "--project", help=".uproject file or its folder (default: found from the current folder)")
     parser.add_argument("-i", "--instance", help="talk to a game process started by `ue.py net` (server, client1, ...) "
                                                  "instead of the editor: py, exec, wait, render, log")

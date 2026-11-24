@@ -23,6 +23,9 @@
 - GitHub Actions runs the tests on Windows and Linux with Python 3.10 and 3.13 on every push and pull request.
 - `import ue` and the `uetk` modules work on Linux and macOS; the Windows-only parts (process discovery,
   launching, screenshots, `bridge install`) say so there instead of failing on import.
+- `ue.py build`, `editor start|restart` and `py` warn when the project's copy of a toolkit plugin differs from the
+  toolkit's (run `ue.py plugins install`, then `ue.py build`).
+- `ue.py --version`.
 
 ## 0.1.0 (2026-11-24)
 

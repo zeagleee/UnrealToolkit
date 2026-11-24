@@ -234,12 +234,12 @@ imported outside it, except `editor/scenario.py`. Code in `uetk/` and `ue.py` is
   expected `.txt` output. Waits for the sample export (section 3, "Tests").
 
 ### Toolkit
-- [ ] **N12. Warn about an out-of-date plugin.** When a project's copy of UETKEditor or UETKVfx differs from the
+- [x] **N12. Warn about an out-of-date plugin.** Done 2026-11-24: `plugins.stale_warnings`, printed by `build`, `editor start|restart` and `py`; tested in `tests/test_plugins.py`. When a project's copy of UETKEditor or UETKVfx differs from the
   toolkit's (`uetk.plugins.status(project)[name]["up_to_date"]` is false), `ue.py editor start`, `ue.py build` and
   `ue.py py` print one line: "UETKEditor in this project is older than the toolkit's: run `ue.py plugins install`,
   then `ue.py build`". Today a stale copy shows up as a missing function deep inside a call. Test it with a temp
   project folder.
-- [ ] **N13. Version number.** `__version__` in `uetk/__init__.py`, `ue.py --version` prints it, and a test checks it
+- [x] **N13. Version number.** Done 2026-11-24: `uetk.__version__`, `ue.py --version`; `tests/test_ue_cli.py` checks it against `CHANGELOG.md`. `__version__` in `uetk/__init__.py`, `ue.py --version` prints it, and a test checks it
   against the newest version heading in `CHANGELOG.md`.
 - [ ] **N14. Installable package.** A `pyproject.toml` (setuptools, no runtime dependencies) so that
   `pipx install git+https://github.com/zeagleee/UnrealToolkit` gives a `ue` command, with `editor/`, `plugin/` and

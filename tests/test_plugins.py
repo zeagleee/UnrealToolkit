@@ -1,4 +1,4 @@
-"""uetk/plugins.py: which plugins to install, copying them into a project, and status (N1, N8)."""
+"""uetk/plugins.py: which plugins to install, copying them into a project, and status (N1, N8, N12)."""
 import shutil
 import unittest
 from unittest import mock
@@ -90,6 +90,17 @@ class InstallTest(unittest.TestCase):
         status = plugins.status(self.project)
         self.assertFalse(status["UETKEditor"]["up_to_date"])
         self.assertTrue(status["UETKVfx"]["up_to_date"])
+
+    def test_stale_warnings(self):
+        self.assertEqual(plugins.stale_warnings(self.project), [], "nothing installed: nothing to warn about")
+        plugins.install(self.project)
+        self.assertEqual(plugins.stale_warnings(self.project), [])
+        new_file = self.source / "UETKVfx" / "Source" / "New.h"
+        new_file.write_text("#pragma once\n", encoding="utf-8")
+        warnings = plugins.stale_warnings(self.project)
+        self.assertEqual(len(warnings), 1)
+        self.assertTrue(warnings[0].startswith("UETKVfx in this project is older than the toolkit's"), warnings)
+        self.assertIn("ue.py plugins install", warnings[0])
 
 
 if __name__ == "__main__":

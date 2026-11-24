@@ -830,7 +830,7 @@ cost and scalability, networking, online sessions, project setup, packaging, imp
 | `plugin/UETKEditor` | UnrealEditor (C++ plugin, copied into projects) | offscreen renders (`unreal.UETKEditorLibrary`, `FUETKCapture` for other plugins), spawning into the running game (`unreal.UETKGameLibrary`), Blueprint graphs, material graphs and compile results (`unreal.UETKMaterialLibrary`), validation (`unreal.UETKValidateLibrary`) |
 | `uetk/perf.py` | system Python | `ue.py perf`: CSV profiler runs, parsing (header at the end), summaries, A/B |
 | `uetk/net.py` | system Python | `ue.py net`: game processes with their own bridges, session state, merged logs, `NetSession` for test scripts |
-| `uetk/plugins.py` | system Python | `ue.py plugins install/status`: copies the toolkit's plugins into a project |
+| `uetk/plugins.py` | system Python | `ue.py plugins install/status`: copies the toolkit's plugins into a project; warns when a project's copy is out of date |
 | `tests/` | system Python | the engine-free tests: `python -m unittest discover -s tests` |
 
 ## How the bridge works

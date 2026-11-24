@@ -81,3 +81,14 @@ def status(project):
             "path": str(dest),
         }
     return out
+
+
+def stale_warnings(project):
+    """One line per plugin installed in the project whose files differ from the toolkit's copy. A stale copy otherwise
+    shows up as a missing function deep inside a call. Never raises: an unreadable folder gives no warning."""
+    try:
+        info = status(project)
+    except OSError:
+        return []
+    return [f"{name} in this project is older than the toolkit's: run `ue.py plugins install`, then `ue.py build`"
+            for name, row in info.items() if row["installed"] and not row["up_to_date"]]
