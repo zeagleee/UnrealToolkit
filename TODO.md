@@ -201,7 +201,7 @@ so the toolkit keeps no dependencies. The code in `editor/` runs inside Unreal a
 imported outside it, except `editor/scenario.py`. Code in `uetk/` and `ue.py` is plain Python.
 
 ### Tests and CI
-- [ ] **N1. Test setup.** A `tests/` folder run by `python -m unittest discover -s tests`, a first test
+- [x] **N1. Test setup.** Done 2026-11-24: `tests/` with `tests/support.py`; "Running the tests" in `CONTRIBUTING.md`. A `tests/` folder run by `python -m unittest discover -s tests`, a first test
   (`uetk.plugins.with_dependencies` is an easy one), and a "Running the tests" paragraph in `CONTRIBUTING.md` in place
   of "There's no automated test suite yet". Done when the command passes in a fresh clone.
 - [ ] **N2. GitHub Actions.** `.github/workflows/tests.yml`: on every push and pull request, on `windows-latest` with
@@ -211,21 +211,21 @@ imported outside it, except `editor/scenario.py`. Code in `uetk/` and `ue.py` is
   import `winreg` and `ctypes.windll` at the top, so `import ue` fails on Linux and macOS. Import them inside the
   functions that use them, or behind `sys.platform == "win32"`, and add `ubuntu-latest` to the CI matrix. Done when
   the tests pass on Linux and nothing changes on Windows. After N2.
-- [ ] **N4. Tests for `uetk/logs.py`:** `verbosity`, `category` and `is_problem` on sample lines
+- [x] **N4. Tests for `uetk/logs.py`:** Done 2026-11-24: `tests/test_logs.py`. `verbosity`, `category` and `is_problem` on sample lines
   (`[2026.11.24-14.49.05:592][  0]LogWindows: Error: ...`), Display, Warning, Error and Fatal lines, and lines without
   a timestamp.
-- [ ] **N5. Tests for `ue.py`'s helpers:** `_undo_msys_paths` (fake Git Bash with `MSYSTEM` and `EXEPATH` pointing at a
+- [x] **N5. Tests for `ue.py`'s helpers:** Done 2026-11-24: `tests/test_ue_cli.py`. `_undo_msys_paths` (fake Git Bash with `MSYSTEM` and `EXEPATH` pointing at a
   temp folder that has `usr/bin`), `_collapse_repeats`, `_dumps` (arrays of numbers stay on one line) and
   `_parse_params`; and every command's `--help` parses (`build_parser()`).
-- [ ] **N6. Tests for `editor/scenario.py`:** `has_top_level_yield`, `wrap_scenario` and `top_level_bindings` on small
+- [x] **N6. Tests for `editor/scenario.py`:** Done 2026-11-24: `tests/test_scenario.py`. `has_top_level_yield`, `wrap_scenario` and `top_level_bindings` on small
   scripts; a `Task` stepping through `Frames`, `Seconds` (with a fake clock) and `Until`; an exception inside a
   scenario reaching the caller.
-- [ ] **N7. Tests for `uetk/state.py`:** `snapshot_save`, `snapshot_diff` and `snapshot_restore` in a temp folder (a
+- [x] **N7. Tests for `uetk/state.py`:** Done 2026-11-24: `tests/test_state.py`. `snapshot_save`, `snapshot_diff` and `snapshot_restore` in a temp folder (a
   stub with the `root` and `out_dir` attributes a `Project` has), and `ini_get`, `ini_set` and `ini_remove` keeping a
   file's encoding (UTF-16 ini files exist) and line endings.
-- [ ] **N8. Tests for `uetk/plugins.py`:** `install` into a temp project adds, updates and removes files; `status`
+- [x] **N8. Tests for `uetk/plugins.py`:** Done 2026-11-24: `tests/test_plugins.py`. `install` into a temp project adds, updates and removes files; `status`
   reports `up_to_date` before and after a source file changes.
-- [ ] **N9. Tests for `uetk/project.py`:** `_find_uproject` from a subfolder, with `--project` (a file or a folder),
+- [x] **N9. Tests for `uetk/project.py`:** Done 2026-11-24: `tests/test_project.py`. `_find_uproject` from a subfolder, with `--project` (a file or a folder),
   with `UETK_PROJECT`, and the error when there's none; `_engine_from_launcher_manifest` with a fake
   `LauncherInstalled.dat` (point `PROGRAMDATA` at a temp folder).
 - [ ] **N10. Tests for `uetk/perf.py`:** `parse_csv` (each row is a prefix of the header written at the end),

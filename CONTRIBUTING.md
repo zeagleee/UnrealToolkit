@@ -20,10 +20,23 @@ Give the engine version (`ue.py info` prints it), the command you ran, and what 
   before they reach the engine.
 - **Clear errors.** Say what was wrong and what would be right ("no key named 'Spcebar'; did you mean SpaceBar").
 
-## Checking a change
+## Running the tests
 
-There's no automated test suite yet (TODO.md, N1 and N2 in section 4). Before a pull request that touches the engine
-side:
+The engine-free code (`ue.py`, `uetk/` and `editor/scenario.py`) has tests that need only
+Python 3.10 or newer, no Unreal Engine and no packages. From the toolkit folder:
+
+```
+python -m unittest discover -s tests                  # every test
+python -m unittest discover -s tests -p test_state.py # one file
+python -m compileall -q ue.py uetk editor scripts     # syntax of the editor-side code the tests can't import
+```
+
+Tests use the standard library's `unittest` and write only to temporary folders. Code in `editor/` imports `unreal`,
+so the tests can't import it, except `editor/scenario.py`, which `tests/support.py` loads by path.
+
+## Checking a change in the engine
+
+Before a pull request that touches the engine side:
 
 1. Make a project from a stock engine template (`scripts/new_from_template.py`), then `ue.py plugins install` and
    `ue.py build`.

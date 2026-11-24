@@ -18,6 +18,8 @@
   old name; `ueh.refresh_registry` does that rescan. `ueh.fix_redirectors` works again (it called an API Python
   doesn't have).
 - `ue.py` puts back `/Game/...` arguments that Git Bash rewrote; `MSYS_NO_PATHCONV=1` is no longer needed.
+- **Tests:** engine-free tests in `tests/` (`python -m unittest discover -s tests`) for `ue.py`'s helpers and
+  parser, logs, snapshots and ini editing, plugin installs, project and engine discovery, and scenarios.
 
 ## 0.1.0 (2026-11-24)
 
