@@ -44,6 +44,7 @@ import unreal
 
 import uprop
 from uprop import PropError
+from uprop import plain as _plain
 
 EAL = unreal.EditorAssetLibrary
 
@@ -213,53 +214,10 @@ def _instance(kind, item, outer, known):
     return obj
 
 
-def _plain(value):
-    if isinstance(value, unreal.EnumBase):
-        return value.name.lower()
-    if isinstance(value, bool) or value is None or isinstance(value, (int, str)):
-        return value
-    if isinstance(value, float):
-        return float(format(value, ".6g"))
-    if isinstance(value, unreal.Object):
-        return uprop.short_path(value.get_path_name())
-    if isinstance(value, (unreal.Name, unreal.Text)):
-        return str(value)
-    if isinstance(value, (list, tuple, unreal.Array)):
-        return [_plain(v) for v in value]
-    if isinstance(value, unreal.StructBase):
-        for fields in ("xyzw", "rgba"):
-            parts = []
-            for f in fields:
-                try:
-                    parts.append(_plain(value.get_editor_property(f)))
-                except Exception:
-                    break
-            if len(parts) >= 2:
-                return parts
-    return str(value)
-
-
-def _nondefault(obj):
-    """{property: value} of an object's settings that differ from its class defaults."""
-    import ueh
-    cdo = unreal.get_default_object(obj.get_class())
-    out = {}
-    for name, (_type, access, _doc) in sorted(ueh.prop_specs(obj).items()):
-        if access != "Read-Write" or name in _SKIP_PROPS:
-            continue
-        try:
-            a, b = obj.get_editor_property(name), cdo.get_editor_property(name)
-        except Exception:
-            continue
-        if _plain(a) != _plain(b):
-            out[name] = _plain(a)
-    return out
-
-
 def _item_spec(obj):
     cls = obj.get_class().get_name()
     name = _SHORT.get(cls, cls)
-    props = _nondefault(obj)
+    props = uprop.nondefault(obj, _SKIP_PROPS)
     return {name: props} if props else name
 
 

@@ -63,7 +63,11 @@ Still open: import options for glTF files (the engine's defaults are used).
 - **Done when:** a folder of FBX meshes, textures and wavs imports in one headless command on every supported
   version, and reimports after the files change.
 
-### [ ] Menus and HUD in a running game (UMG)
+### [x] Menus and HUD in a running game (UMG)
+Done 2026-11-24: `ue.py ui` / `editor/ui.py`, `bpedit.bound_event` (README, "Menus and HUD"), with Widget Blueprints
+built from a spec. Checked in PIE on 5.8 and 5.6, in a `ue.py net` client on 5.8, building headless on 5.7. Still open:
+widget rectangles (empty geometry in every run here), ListView/TileView entries, and the in-game part on 5.7.
+
 Forced keys reach gameplay input, not a focused widget, so tests can't drive menus today without project code.
 - `ueh.ui()`: the live widget tree of the PIE or game world (class, name, text, visibility, on-screen rect).
 - `ui_click(label_or_name)`, `ui_type(widget, text)`, `ui_text(name)`, and `yield ueh.ui_wait(label)` in scenarios.

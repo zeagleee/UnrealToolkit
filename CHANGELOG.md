@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+- **Menus and HUD** (`ue.py ui`): the widgets on screen in the running game (PIE or a `ue.py net` process) as a
+  tree; click, type, set values and read text by label or name; wait for a widget in scenarios; open a widget.
+  Widget Blueprints built from a spec and read back.
+- `bpedit` gains `bound_event` (a widget's or component's event, as the editor's "+" buttons add it).
+
 ## 0.1.0 (2026-11-24)
 
 First public release. Windows, Unreal Engine 5.6–5.8.

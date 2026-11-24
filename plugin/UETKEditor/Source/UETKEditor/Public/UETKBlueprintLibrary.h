@@ -43,6 +43,8 @@ public:
 	 *   cast {"class"}
 	 *   macro {"name"}               (StandardMacros: ForEachLoop, ForLoop, DoOnce, Gate, IsValid...)
 	 *   comment {"text", "width"?, "height"?}
+	 *   bound_event {"component", "event"}       (a widget's or component's event: ResumeButton OnClicked,
+	 *                                             CollisionBox OnComponentBeginOverlap; the existing one if any)
 	 *   node {"class", "props"?: {name: text}}   (any graph node class, e.g. K2Node_EnhancedInputAction with
 	 *                                             {"InputAction": "/Game/Input/IA_Jump.IA_Jump"})
 	 * X/Y: position; INT32_MIN = below the graph's lowest node.

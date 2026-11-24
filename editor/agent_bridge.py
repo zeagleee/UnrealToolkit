@@ -100,8 +100,8 @@ def to_jsonable(value, depth=0):
 
 # Helper modules pre-imported into every namespace and reloaded when their file changes. Support modules come
 # first so a reload of `vfx` sees the new `vfx_assets`; only the names in NAMESPACE_MODULES go into the namespace.
-HELPER_MODULES = ("ueh", "uprop", "vfx_assets", "vfx", "bpedit", "mat", "inputs", "importer")
-NAMESPACE_MODULES = ("ueh", "vfx", "bpedit", "mat", "inputs", "importer")
+HELPER_MODULES = ("ueh", "uprop", "vfx_assets", "vfx", "bpedit", "mat", "inputs", "importer", "ui")
+NAMESPACE_MODULES = ("ueh", "vfx", "bpedit", "mat", "inputs", "importer", "ui")
 
 
 def new_namespace():

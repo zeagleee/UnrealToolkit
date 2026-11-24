@@ -73,6 +73,7 @@ with the editor's rights (your files, network, project). It's meant for your own
 | Particle effects (Niagara) | `ue.py vfx create /Game/VFX/NS_Fire --preset fire --preview`, `vfx preview`, `vfx describe` (below, "VFX") |
 | Materials: build from expressions, read one back, instances, functions | `ue.py mat create /Game/M_X --spec m.json --preview`, `mat describe`, `mat instance MI_X --parent M_X --set Roughness=0.3` (below, "Materials") |
 | Enhanced Input: read or build actions and mapping contexts, map keys, contexts on Blueprints and the running player | `ue.py input dump`, `input create --spec i.json`, `input map IMC_X IA_Y LeftShift`, `input use BP_Controller IMC_X`, `input active` (below, "Enhanced Input") |
+| Menus and HUD in the running game; Widget Blueprints from a spec | `ue.py ui tree`, `ui click "Save game"`, `ui type PlayerName Ada`, `ui wait Paused`, `ui create WBP_X --spec m.json` (below, "Menus and HUD") |
 | Import meshes, animations, textures and sounds (folders too) with presets; reimport what changed | `ue.py import D:/Art --to /Game/Art`, `import --status /Game/Art`, `import --reimport /Game/Art` (below, "Importing") |
 | Hung editor | `ue.py kill` (loses unsaved work; check `ueh.dirty()` first) |
 | Bridge in self-launched editors | `ue.py bridge install` / `uninstall` (per-user `UE_PYTHONPATH`) |
@@ -157,8 +158,8 @@ all of them into the project's `Plugins/` folder (source only), and `ue.py build
 again after a toolkit update: a `.cpp`-only change can go in with `ue.py livecoding`, a header change needs
 `build --restart`. `ue.py plugins status` shows each one as installed, built, or loaded.
 
-- **UETKEditor:** offscreen renders (`ue.py render`), Blueprint graph editing (`bpedit`), and reading material
-  graphs and compile errors (`mat`). It also holds the shared capture code (`FUETKCapture`, `FUETKContactSheet` in
+- **UETKEditor:** offscreen renders (`ue.py render`), Blueprint graph editing (`bpedit`), reading material
+  graphs and compile errors (`mat`), UMG widget trees (`ui`), and import helpers (collision, LOD groups). It also holds the shared capture code (`FUETKCapture`, `FUETKContactSheet` in
   `UETKCapture.h`).
 - **UETKVfx:** Niagara (`ue.py vfx`). It needs UETKEditor, and `vfx install` brings it along.
 - **Live Coding blocks other builds on the same engine.** While one editor has Live Coding active, UBT refuses to build
@@ -426,6 +427,64 @@ ue.py input active                                 # the running game's player: 
     docstring regex's `\s*` crossed the line break. `InputModifierNegate` showed x and z but not y.
   - Python has no list of key names; the plugin reads them from `EKeys` (`ue.py input keys`).
 
+## Menus and HUD (UMG)
+
+`ue.py ui` (`ui` in `ue.py py`; `editor/ui.py`) reads and drives the widgets on screen in the running game (PIE, or a
+`ue.py net` process with `--instance`), and builds Widget Blueprints from a spec. It needs the UETKEditor plugin.
+
+```
+ue.py press P                               # open a menu the way a player would (or: ue.py ui open /Game/UI/WBP_Pause)
+ue.py ui wait Paused                        # until something labelled "Paused" is on screen
+ue.py ui tree                               # the widgets on screen: class, name, text, value, disabled
+ue.py ui click "Save game"                  # a button or checkbox, by its label (ignoring case) or name
+ue.py ui type PlayerName Ada                # an editable text: set, changed, committed with Enter
+ue.py ui set Volume 0.3                     # a slider, spin box, checkbox or combo box
+ue.py ui text Status                        # one widget's text; `ui text` alone: all the text on screen
+ue.py ui click Resume && ue.py ui wait Paused --gone
+ue.py ui create /Game/UI/WBP_Pause --spec pause.json    # a Widget Blueprint's designer tree from a spec
+ue.py ui describe /Game/UI/WBP_Pause                    # read one back
+```
+
+In scenarios: `yield ui.wait('Paused')`, then `ui.click('Resume')`.
+
+- **Why it's needed:** forced keys reach gameplay input, not a focused widget, so menus need their own driver. Clicks,
+  typing and values go through the widgets' own events (a click fires OnPressed, OnReleased and OnClicked), so
+  Blueprint and C++ handlers run as they do for a real click. Slate's hit testing doesn't run: a button behind another
+  widget still gets clicked.
+- **Targets** match a widget's name or its label (its own text, or the text inside it): exactly first, then the start
+  of the label, then anywhere in it. A button and the text inside it share a label; the button wins. A missing or
+  ambiguous target lists what is on screen.
+- **Building a menu:** the spec nests widgets (`type`, `name`, `text`, `props`, `slot`, `children`), and every widget
+  becomes a variable. Wire it with `bpedit`: `g.bound_event('ResumeButton', 'OnClicked')`. The format is in
+  `editor/ui.py`'s docstring.
+- **Checked on UE 5.8 (2026-11-24), in a Third Person template, with the editor in the background:**
+  - A pause menu was built from a spec: a title, two buttons, a checkbox, a slider, a name field and a status line.
+    Its events were wired with `bound_event`, and an `IA_Pause` action on P opened it from the character Blueprint.
+  - In PIE, `press P` opened it and paused the game. Typing a name, and clicking Save, changed the status line through
+    the Blueprint. The checkbox and slider took their new values. Resume closed the menu and unpaused the game.
+  - The same in a `ue.py net` client process, with `--instance client1`.
+- **Checked on 5.6 and 5.7:** the plugin builds on both. On 5.6, in a running editor, the same menu was built, opened
+  with `ui.open` in PIE and driven the same way. On 5.7 the building side (the spec, `bound_event`, the compile,
+  `describe`) ran headless; the in-game part is untried there, because that editor stopped at a startup dialog.
+- **Not yet:**
+  - Rectangles: `tree` shows a widget's position and size in viewport pixels only when Slate has arranged it, and in
+    no run here (editor in the background, a net client's window) had it, so none were shown.
+  - The entries a ListView or TileView generates aren't walked.
+- **What tripped up the first version:**
+  - Python can't reach a user widget's or Widget Blueprint's `WidgetTree`, or create a widget (Create Widget is
+    internal to Blueprint). The plugin's `UETKWidgetLibrary` does those, and Python walks the rest
+    (`PanelWidget.get_child_at`).
+  - A widget added to a Widget Blueprint must be registered with `UWidgetBlueprint::OnVariableAdded`, as the designer
+    does. Without it the compiler ensures for every widget ("Widget was added but did not get a GUID").
+  - Marking the Blueprint structurally modified after each added widget recompiles its skeleton every time (about 3 s
+    per widget). Mark it modified, and compile once at the end.
+  - Struct properties compared through `str()` always differ: the text includes the struct's address. `uprop`
+    compares them by `export_text()`.
+  - In Python, `UWidgetBlueprintLibrary` is `unreal.WidgetLibrary` and `USlateBlueprintLibrary` is
+    `unreal.SlateLibrary`.
+  - `BlueprintEditorLibrary.get_blueprint_parent_class` exists from 5.8; the asset registry's `ParentClass` tag has it
+    on every version.
+
 ## Importing
 
 `ue.py import` (`importer` in `ue.py py`; `editor/importer.py`) imports files and whole folders: static and skeletal
@@ -532,7 +591,8 @@ bpedit.compile('/Game/BP_Door'); ueh.save('/Game/BP_Door')
   `cls='Character'` for others; `DestroyActor` finds `K2_DestroyActor`), `event`, `custom_event` (with typed
   parameters), `get`/`set_var`, `branch`, `sequence`, `cast`, `macro` (StandardMacros: ForEachLoop, DoOnce, Gate...),
   `self_ref`, `comment`, `input_action` (an Enhanced Input action event: Started, Triggered, Completed... and
-  ActionValue), and `any_node` (any graph node class, its properties set before its pins are made:
+  ActionValue), `bound_event` (a widget's or component's event, as the editor's "+" buttons add it:
+  `bound_event('ResumeButton', 'OnClicked')`, `bound_event('TriggerBox', 'OnComponentBeginOverlap')`), and `any_node` (any graph node class, its properties set before its pins are made:
   `any_node('K2Node_EnhancedInputAction', InputAction='/Game/Input/IA_Jump')`, which is what `input_action` does).
   Also `add_variable` (category, instance editable,
   replicated, expose on spawn) and `add_function` (typed inputs and outputs, pure).
@@ -576,6 +636,9 @@ bpedit.compile('/Game/BP_Door'); ueh.save('/Game/BP_Door')
 - UBT, `genproject` and toolkit-launched editors run with the engine's bundled .NET (`Engine/Binaries/ThirdParty/DotNet/<ver>/<arch>`),
   the same setup `Build.bat` does through `GetDotnetPath.bat`. UE 5.8's UBT needs .NET 10, which usually isn't installed system-wide.
   Set `UE_USE_SYSTEM_DOTNET=1` to use the system .NET instead.
+- **A dialog at startup stops the editor** until someone answers it: a "Low Drive Space" warning (UE 5.7 shows one
+  when C: is nearly full), "restore packages?" after a crash. `ue.py editor start` names it after about 45 s, when the
+  log has stopped too; the toolkit never sends keys or clicks to answer it.
 - **Blueprint-only projects:** `ue.py editor start` fails with "No Editor target in Source/*.Target.cs". Launch `Engine/Binaries/Win64/UnrealEditor.exe <uproject> <map>` yourself, then `ue.py editor wait`. The bridge comes up if the per-user `UE_PYTHONPATH` is set.
 - **Screenshots of a spot in the level:** `ueh.set_camera` moves the camera, but an unfocused editor doesn't redraw, so `ue.py screenshot` shows the old view. `editor_set_viewport_realtime(True)` also logs a handled ensure.
   Use `ue.py render view --at x,y,z --look x,y,z` instead (below, "Offscreen renders"); it meters dark interiors to mid-gray, so the temporary light and hand-set exposure the old recipe needed aren't.
@@ -600,8 +663,8 @@ bpedit.compile('/Game/BP_Door'); ueh.save('/Game/BP_Door')
     - Checked in the template project (2026-11-23): forced Mouse2D turned the camera through IA_Look, a held SpaceBar
       jumped 86 cm, and a tap of P opened the pause menu.
   - **Forced keys reach gameplay input, not a focused UMG widget.** With a menu open in UI-only input mode, the menu
-    handles keys itself as Slate key events, so pressing P again doesn't close it. Drive menus with
-    `button.on_clicked.broadcast()` (see "Code-built UMG menus") or the controller's own functions.
+    handles keys itself as Slate key events, so pressing P again doesn't close it. Drive menus with `ue.py ui`
+    (see "Menus and HUD").
   - **Pick the subsystem by world.** After a PIE restart, the newest `EnhancedInputLocalPlayerSubsystem` can be a leftover, or another PIE player's. Use the one whose `get_world()` is the PIE world.
 - **`PlayNumberOfClients` persists** in the project's `Saved/Config/WindowsEditor/EditorPerProjectUserSettings.ini`. A test that set it to 2 and didn't set it back leaves every later PIE running two players. Check it before trusting single-player results.
 - **Scripted PIE waits counted in frames** are short at full frame rate (70 frames < 1 s at 100+ fps). Wait generously for anything timed.
@@ -650,6 +713,7 @@ cost and scalability, networking, online sessions, project setup, packaging, imp
 | `editor/mat.py` | UnrealEditor | materials from expression specs, reading them back (`unreal.UETKMaterialLibrary`), instances, functions |
 | `editor/inputs.py` | UnrealEditor | Enhanced Input actions, mapping contexts, triggers and modifiers as specs; contexts on Blueprints and in the running game |
 | `editor/uprop.py` | UnrealEditor | property plumbing shared by `mat`, `inputs` and `importer`: loose enum names, structs from lists, asset paths, PIE-safe loading |
+| `editor/ui.py` | UnrealEditor or a game process | UMG: the widgets on screen, clicking and typing, Widget Blueprints from a spec (`unreal.UETKWidgetLibrary`) |
 | `editor/importer.py` | UnrealEditor (or headless) | importing files and folders with presets, the source record in each asset, reimport of changed sources |
 | `editor/vfx.py`, `vfx_assets.py`, `vfx_presets.py` | UnrealEditor (presets: any Python) | VFX spec builder, generated particle materials/textures, presets |
 | `plugin/UETKEditor` | UnrealEditor (C++ plugin, copied into projects) | offscreen renders (`unreal.UETKEditorLibrary`, `FUETKCapture` for other plugins), Blueprint graphs, material graphs and compile results (`unreal.UETKMaterialLibrary`) |

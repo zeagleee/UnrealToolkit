@@ -168,6 +168,13 @@ def set_prop(obj, name, value):
     if used is None:
         raise PropError("%s has no property %r" % (obj.get_class().get_name(), name))
     current = obj.get_editor_property(used)
+    if isinstance(value, str) and isinstance(current, unreal.StructBase):
+        try:
+            current.import_text(value)  # the struct's own text import: no plugin needed
+            obj.set_editor_property(used, current)
+            return
+        except Exception:
+            pass
     if isinstance(value, str) and isinstance(current, (unreal.StructBase, unreal.Array)):
         lib = getattr(unreal, "UETKMaterialLibrary", None)
         if lib is None:
@@ -192,3 +199,57 @@ def set_prop(obj, name, value):
             if result.get("ok"):
                 return
         raise PropError("%s.%s = %r: %s" % (obj.get_class().get_name(), used, value, exc))
+
+
+def plain(value):
+    """A property value as plain JSON: enums by lower-case name, objects by path, vectors and colours as lists,
+    margins as a number (all sides equal) or [left, top, right, bottom], other structs as Unreal's text form."""
+    if isinstance(value, unreal.EnumBase):
+        return value.name.lower()
+    if isinstance(value, bool) or value is None or isinstance(value, (int, str)):
+        return value
+    if isinstance(value, float):
+        return float(format(value, ".6g"))
+    if isinstance(value, unreal.Object):
+        return short_path(value.get_path_name())
+    if isinstance(value, (unreal.Name, unreal.Text)):
+        return str(value)
+    if isinstance(value, (list, tuple, unreal.Array)):
+        return [plain(v) for v in value]
+    if isinstance(value, unreal.StructBase):
+        if isinstance(value, unreal.Margin):
+            sides = [plain(value.get_editor_property(f)) for f in ("left", "top", "right", "bottom")]
+            return sides[0] if len(set(sides)) == 1 else sides
+        for fields in ("xyzw", "rgba"):
+            parts = []
+            for f in fields:
+                try:
+                    parts.append(plain(value.get_editor_property(f)))
+                except Exception:
+                    break
+            if len(parts) >= 2:
+                return parts
+        try:
+            return value.export_text()  # by value: str() would include the struct's address
+        except Exception:
+            pass
+    return str(value)
+
+
+def nondefault(obj, skip=()):
+    """{property: value} of an object's settings that differ from its class defaults."""
+    import ueh
+    cdo = unreal.get_default_object(obj.get_class())
+    out = {}
+    for name, (_type, access, _doc) in sorted(ueh.prop_specs(obj).items()):
+        if access != "Read-Write" or name in skip:
+            continue
+        try:
+            a, b = obj.get_editor_property(name), cdo.get_editor_property(name)
+        except Exception:
+            continue
+        if isinstance(a, (unreal.MulticastDelegateBase, unreal.DelegateBase)):
+            continue  # event bindings, not settings
+        if plain(a) != plain(b):
+            out[name] = plain(a)
+    return out

@@ -562,6 +562,53 @@ def cmd_import(p, args):
     return _print_response(resp, "problems")
 
 
+def cmd_ui(p, args):
+    a = list(args.args or [])
+    target = a[0] if a else None
+
+    def need(n, usage):
+        if len(a) < n:
+            raise ToolkitError(f"usage: ue.py ui {args.action} {usage}")
+
+    player = args.player
+    if args.action == "tree":
+        code = f"ui.tree(player={player!r}, hidden={args.hidden}, text={not args.json})"
+    elif args.action == "click":
+        need(1, "TARGET (a label or widget name)")
+        code = f"ui.click({target!r}, player={player!r})"
+    elif args.action == "type":
+        need(2, "TARGET TEXT")
+        code = f"ui.type({target!r}, {a[1]!r}, commit={not args.no_commit}, player={player!r})"
+    elif args.action == "set":
+        need(2, "TARGET VALUE")
+        try:
+            value = json.loads(a[1])
+        except ValueError:
+            value = a[1]
+        code = f"ui.set({target!r}, {value!r}, player={player!r})"
+    elif args.action == "text":
+        code = f"ui.text({target!r}, player={player!r})"
+    elif args.action == "open":
+        need(1, "WIDGET_BLUEPRINT")
+        code = f"ui.open({target!r}, player={player or 0}).get_name()"
+    elif args.action == "wait":
+        need(1, "TARGET [--gone]")
+        code = (f"_w = (yield ui.wait({target!r}, timeout={args.timeout - 5!r}, gone={args.gone}, player={player!r}))\n"
+                f"{{'gone': {target!r}}} if {args.gone} else {{'found': _w.get_name()}}")
+    elif args.action == "describe":
+        need(1, "WIDGET_BLUEPRINT")
+        code = f"ui.describe({target!r}, text={not args.json})"
+    elif args.action == "create":
+        need(1, "WIDGET_BLUEPRINT --spec FILE")
+        if not args.spec:
+            raise ToolkitError("give --spec FILE.json (or --spec - to read stdin); the format is in editor/ui.py")
+        text = sys.stdin.read() if args.spec == "-" else Path(args.spec).read_text(encoding="utf-8")
+        code = f"ui.build({json.loads(text)!r}, {target!r})"
+    else:
+        raise ToolkitError(f"unknown ui action {args.action}")
+    return _print_response(Bridge(p).call(code, timeout=args.timeout), "problems")
+
+
 def cmd_exec(p, args):
     code = f"ueh.console({args.command!r}, pie={args.pie})"
     return _print_response(Bridge(p).call(code, timeout=args.timeout), "all")
@@ -988,6 +1035,22 @@ def build_parser():
     s.add_argument("--json", action="store_true", help="the raw records instead of the summary")
     s.add_argument("--timeout", type=float, default=1800)
     s.set_defaults(fn=cmd_import)
+
+    s = sub.add_parser("ui", help="UMG in the running game (PIE or --instance): the widgets on screen, click, type, "
+                                  "set values, read text, wait for a widget; and Widget Blueprints from a spec (editor/ui.py)")
+    s.add_argument("action", choices=["tree", "click", "type", "set", "text", "wait", "open", "describe", "create"],
+                   help="tree = the widgets on screen; click TARGET; type TARGET TEXT; set TARGET VALUE; text [TARGET]; "
+                        "wait TARGET [--gone]; open WBP = put one on screen; describe WBP = a Widget Blueprint's designer "
+                        "tree; create WBP --spec")
+    s.add_argument("args", nargs="*", help="TARGET is a widget's label (its text, ignoring case) or name")
+    s.add_argument("--player", type=int, help="only this local player's widgets")
+    s.add_argument("--hidden", action="store_true", help="tree: include collapsed and hidden widgets")
+    s.add_argument("--no-commit", action="store_true", help="type: don't commit (no Enter)")
+    s.add_argument("--gone", action="store_true", help="wait: until nothing matches")
+    s.add_argument("--spec", help="create: JSON spec file, or - for stdin")
+    s.add_argument("--json", action="store_true", help="tree/describe: data instead of text")
+    s.add_argument("--timeout", type=float, default=60)
+    s.set_defaults(fn=cmd_ui)
 
     s = sub.add_parser("exec", help="run a console command in the editor (or PIE with --pie)")
     s.add_argument("command")

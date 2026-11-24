@@ -65,6 +65,8 @@ def wait_ready(project, pid, timeout=900):
     started = time.time()
     next_report = started + 20
     titles = set()
+    dialog_since = None  # a window other than the editor's own, open while the log stands still
+    log_size, log_moved = -1, started
     while True:
         elapsed = time.time() - started
         if not procs.pid_alive(pid):
@@ -80,10 +82,23 @@ def wait_ready(project, pid, timeout=900):
                 if response["ok"] and response["result"]["ready"]:
                     _say(f"Editor ready after {elapsed:.0f}s (level {response['result']['level']}).")
                     return response["result"]
-        for window in procs.windows_of(pid):
+        open_windows = procs.windows_of(pid)
+        for window in open_windows:
             if window["title"] and window["title"] not in titles:
                 titles.add(window["title"])
                 _say(f"  window opened: {window['title']!r}")
+        # A modal dialog (a low-disk warning, "restore packages?") stops startup until someone answers it. Say so
+        # early instead of waiting out the timeout: the toolkit never sends keys or clicks to answer it.
+        dialogs = [w["title"] for w in open_windows if w["title"] and "Unreal Editor" not in w["title"]]
+        with contextlib.suppress(Exception):
+            size = logs.size_of(logs.active_log(project))
+            if size != log_size:
+                log_size, log_moved = size, time.time()
+        dialog_since = (dialog_since or time.time()) if dialogs else None
+        if dialogs and time.time() - dialog_since > 45 and time.time() - log_moved > 45:
+            raise ToolkitError(f"The editor is waiting on a dialog: {', '.join(repr(t) for t in dialogs)}. Answer it "
+                               "in the editor (or fix its cause), then run `ue.py editor wait`. "
+                               "`ue.py screenshot --all` shows it.")
         if elapsed > timeout:
             raise ToolkitError(f"Editor not ready after {timeout}s (bridge state: {state}). "
                                "Check `ue.py windows` / `ue.py screenshot` for a blocking dialog.")

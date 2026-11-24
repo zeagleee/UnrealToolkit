@@ -5,6 +5,7 @@
 #include "EdGraphSchema_K2.h"
 #include "Engine/Blueprint.h"
 #include "K2Node_CallFunction.h"
+#include "K2Node_ComponentBoundEvent.h"
 #include "K2Node_CustomEvent.h"
 #include "K2Node_DynamicCast.h"
 #include "K2Node_Event.h"
@@ -723,6 +724,43 @@ FString UUETKBlueprintLibrary::AddNode(UBlueprint* Blueprint, const FString& Gra
 			N->NodeHeight = static_cast<int32>(Height);
 		});
 	}
+	else if (K == TEXT("boundevent"))
+	{
+		// What the editor's "+" event buttons make: a widget's or component's event (OnClicked,
+		// OnComponentBeginOverlap...), for a variable of the Blueprint.
+		const FName Component(*Field(TEXT("component")));
+		const FName Event(*Field(TEXT("event")));
+		UClass* Owner = Blueprint->SkeletonGeneratedClass ? Blueprint->SkeletonGeneratedClass.Get() : Blueprint->GeneratedClass.Get();
+		FObjectProperty* ComponentProperty = Owner ? FindFProperty<FObjectProperty>(Owner, Component) : nullptr;
+		if (!ComponentProperty)
+		{
+			return Fail(FString::Printf(TEXT("no component or widget variable '%s' (compile the Blueprint after adding it)"), *Component.ToString()));
+		}
+		FMulticastDelegateProperty* Delegate = nullptr;
+		TArray<FString> Events;
+		for (TFieldIterator<FMulticastDelegateProperty> It(ComponentProperty->PropertyClass); It; ++It)
+		{
+			Events.Add(It->GetName());
+			if (Norm(It->GetName()) == Norm(Event.ToString()))
+			{
+				Delegate = *It;
+			}
+		}
+		if (!Delegate)
+		{
+			return Fail(FString::Printf(TEXT("%s has no event '%s' (%s)"), *Component.ToString(), *Event.ToString(), *FString::Join(Events, TEXT(", "))));
+		}
+		if (const UK2Node_ComponentBoundEvent* Existing = FKismetEditorUtilities::FindBoundEventForComponent(Blueprint, Delegate->GetFName(), Component))
+		{
+			FJson Result = MakeShared<FJsonObject>();
+			Result->SetBoolField(TEXT("existing"), true);
+			return PinsOf(const_cast<UK2Node_ComponentBoundEvent*>(Existing), Result);
+		}
+		Node = Create<UK2Node_ComponentBoundEvent>(T.Graph, X, Y, [ComponentProperty, Delegate](UK2Node_ComponentBoundEvent* N)
+		{
+			N->InitializeComponentBoundEventParams(ComponentProperty, Delegate);
+		});
+	}
 	else if (K == TEXT("node"))
 	{
 		// Any graph node class, with properties set (from Unreal's text form) before its pins are made:
@@ -766,7 +804,7 @@ FString UUETKBlueprintLibrary::AddNode(UBlueprint* Blueprint, const FString& Gra
 	}
 	else
 	{
-		return Fail(FString::Printf(TEXT("unknown node kind '%s' (call, event, custom_event, get, set, branch, sequence, self, cast, macro, comment, node)"), *Kind));
+		return Fail(FString::Printf(TEXT("unknown node kind '%s' (call, event, custom_event, get, set, branch, sequence, self, cast, macro, comment, bound_event, node)"), *Kind));
 	}
 	FBlueprintEditorUtils::MarkBlueprintAsStructurallyModified(Blueprint);
 	return PinsOf(Node, MakeShared<FJsonObject>());

@@ -178,9 +178,8 @@ checked at the time; versions and dates are given where they matter.
 - **`UGameUserSettings::ApplyResolutionSettings` isn't virtual.** To keep the editor's window alone, override
   `ApplySettings` and skip it when `GIsEditor`.
 - **Code-built UMG menus:** a `UButton` subclass holding a `TFunction<void()>`, with one UFUNCTION handler bound by
-  `OnClicked.AddDynamic`, makes rows and steppers without a UFUNCTION each. Python clicks one with
-  `button.on_clicked.broadcast()`, and finds it with `unreal.ObjectIterator(<ButtonClass>)` (filter by `get_world()`,
-  read `get_content().get_text()`).
+  `OnClicked.AddDynamic`, makes rows and steppers without a UFUNCTION each. `ue.py ui click <label>` clicks one (it
+  fires the button's OnClicked, as `button.on_clicked.broadcast()` does).
 
 ## Project setup and gameplay code
 

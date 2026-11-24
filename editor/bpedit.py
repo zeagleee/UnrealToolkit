@@ -205,6 +205,12 @@ class Graph:
                 for k, v in props.items()}
         return self._add("node", {"class": cls, "props": text}, x, y)
 
+    def bound_event(self, component, event, x=None, y=None):
+        """A widget's or component's event, as the editor's "+" buttons make it: bound_event('ResumeButton',
+        'OnClicked'), bound_event('TriggerBox', 'OnComponentBeginOverlap'). The existing one if there is one.
+        A widget added to a Widget Blueprint is a variable only after a compile."""
+        return self._add("bound_event", {"component": component, "event": event}, x, y)
+
     def input_action(self, action, x=None, y=None):
         """An Enhanced Input action event, by path or asset name: exec outputs Triggered, Started, Ongoing,
         Canceled and Completed, plus ActionValue (and its elapsed times)."""
