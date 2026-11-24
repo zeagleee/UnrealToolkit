@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Issue templates (bug report, feature request) and a pull request template in `.github/`.
 - **Menus and HUD** (`ue.py ui`): the widgets on screen in the running game (PIE or a `ue.py net` process) as a
   tree; click, type, set values and read text by label or name; wait for a widget in scenarios; open a widget.
   Widget Blueprints built from a spec and read back.

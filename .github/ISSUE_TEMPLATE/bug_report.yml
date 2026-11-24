@@ -1,0 +1,61 @@
+name: Bug report
+description: A command or helper did the wrong thing, or failed
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting. The more of the fields below you fill in, the faster it can be reproduced.
+        Leave out anything private (project names, paths and log lines you'd rather not share).
+  - type: input
+    id: engine
+    attributes:
+      label: Engine version
+      description: "`ue.py info` prints it, e.g. 5.8.0"
+      placeholder: "5.8.0"
+    validations:
+      required: true
+  - type: dropdown
+    id: mode
+    attributes:
+      label: Where it ran
+      options:
+        - In a running editor (windowed)
+        - Headless (--headless, or no editor running)
+        - In a `ue.py net` game process (--instance)
+        - Doesn't involve the engine
+    validations:
+      required: true
+  - type: textarea
+    id: info
+    attributes:
+      label: "`ue.py info` output"
+      render: text
+  - type: textarea
+    id: command
+    attributes:
+      label: The command you ran
+      description: The full command line, or the Python you passed to `ue.py py`.
+      render: text
+    validations:
+      required: true
+  - type: textarea
+    id: result
+    attributes:
+      label: What came back, and what you expected
+      description: The output and the exit code, then what should have happened.
+    validations:
+      required: true
+  - type: textarea
+    id: log
+    attributes:
+      label: Log excerpt
+      description: >
+        `ue.py log --errors`, or the headless run's log under `<Project>/Saved/UnrealToolkit/headless/`.
+        For a crash, `ue.py crash`.
+      render: text
+  - type: input
+    id: toolkit
+    attributes:
+      label: Toolkit version
+      description: "`ue.py --version`, or the commit you're on"
