@@ -67,3 +67,20 @@ Before a pull request that touches the engine side:
 Each feature's page in `docs/` (linked from the README's "Guides") ends with what it was checked on (versions, date, what was tried) and "What tripped up
 the first version": the engine behaviour that cost time, so the next person doesn't pay it again. Keep both current.
 General Unreal knowledge that isn't about the toolkit goes in [docs/unreal-notes.md](docs/unreal-notes.md).
+
+## Releasing
+
+For the maintainer:
+
+1. In `CHANGELOG.md`, "Unreleased" becomes "X.Y.Z (date)", with a new empty "Unreleased" above it, and
+   `__version__` in `uetk/__init__.py` becomes the same version (a test checks that they match). Merge that.
+2. Tag the merge commit `vX.Y.Z`, push the tag, and publish a GitHub release from it with that version's changelog
+   section as its notes: `gh release create vX.Y.Z --notes-file notes.md --discussion-category Announcements`.
+3. Publishing the release runs `.github/workflows/publish.yml`. It builds the sdist and wheel, checks them with
+   `twine check`, fails if the version doesn't match the tag, and attaches them to the release. It uploads them to
+   PyPI only when the repository variable `PYPI_PUBLISH` is `true`.
+
+Turning PyPI uploads on, once: on pypi.org, under Publishing, add a pending trusted publisher (project
+`unreal-toolkit`, owner `zeagleee`, repository `UnrealToolkit`, workflow `publish.yml`, environment `pypi`). Then
+`gh variable set PYPI_PUBLISH --body true`, and upload the latest release with
+`gh workflow run publish.yml --ref vX.Y.Z`.

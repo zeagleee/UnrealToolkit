@@ -10,7 +10,7 @@ The open ones each have an issue: comment there to take one, so nobody else star
 ([CONTRIBUTING.md](CONTRIBUTING.md#finding-something-to-work-on)).
 
 **Next up.** With Unreal Engine: `scripts/selftest.py` (section 3, "Tests"), then Unreal Insights, then the sample
-files N10 and N11 wait for. Without it: N22 (the 0.2.0 release), then N23 to N30, left for new contributors.
+files N10 and N11 wait for. Without it: N23 to N30, left for new contributors.
 
 **How new features should work** (the same way `vfx` and `bpedit` already do):
 - An `editor/` Python helper, plus a `ue.py` command when it's useful from the shell.
@@ -193,6 +193,9 @@ The parts that don't need an engine are in section 4.
   Windows-only), checked on a real install. Live Coding is Windows-only. Starts after N3 (imports that work off
   Windows).
 - [ ] **Engine versions.** State the supported range (5.6–5.8 so far) and decide how far back to go.
+- [ ] **On PyPI** (maintainer): add the trusted publisher on pypi.org and turn uploads on (`CONTRIBUTING.md`,
+  "Releasing"), then run `publish.yml` for `v0.2.0`. Then the README's quickstart says `pipx install unreal-toolkit`,
+  and N28 can add a PyPI badge.
 - [ ] **Blueprint-only projects** ([#20](https://github.com/zeagleee/UnrealToolkit/issues/20)). `editor start` fails with "No Editor target"; launch the editor directly instead.
 
 ## 4. Small tasks that don't need Unreal Engine
@@ -289,5 +292,6 @@ imported outside it, except `editor/scenario.py`. Code in `uetk/` and `ue.py` is
 - [x] **N21. Issue and pull request templates.** Done 2026-11-24: `.github/ISSUE_TEMPLATE/` (bug report, feature request) and `.github/pull_request_template.md`. `.github/ISSUE_TEMPLATE/`: a bug report (engine version and
   `ue.py info` output, the command, what came back, the log excerpt `CONTRIBUTING.md` asks for) and a feature request.
   `.github/pull_request_template.md` with boxes for "checked on 5.6 / 5.7 / 5.8" and "windowed / headless".
-- [ ] **N22. Release 0.2.0,** once the maintainer agrees: `CHANGELOG.md`'s "Unreleased" becomes "0.2.0 (date)", tag
-  `v0.2.0`, and a GitHub release with those notes.
+- [x] **N22. Release 0.2.0.** Done 2026-11-24: tag `v0.2.0` and a GitHub release, its sdist and wheel attached by
+  `.github/workflows/publish.yml`; the steps are in `CONTRIBUTING.md`, "Releasing". `CHANGELOG.md`'s "Unreleased"
+  becomes "0.2.0 (date)", tag `v0.2.0`, and a GitHub release with those notes.
