@@ -91,6 +91,18 @@ class InstallTest(unittest.TestCase):
         self.assertFalse(status["UETKEditor"]["up_to_date"])
         self.assertTrue(status["UETKVfx"]["up_to_date"])
 
+    def test_line_endings_alone_are_not_a_change(self):
+        plugins.install(self.project)
+        cpp = next((self.dest("UETKEditor")).rglob("*.cpp"))
+        text = cpp.read_bytes().replace(b"\r\n", b"\n")
+        crlf, lf = text.replace(b"\n", b"\r\n"), text
+        cpp.write_bytes(crlf if cpp.read_bytes() == lf else lf)  # flip the project copy's line endings
+        self.assertTrue(plugins.status(self.project)["UETKEditor"]["up_to_date"])
+        self.assertEqual(plugins.stale_warnings(self.project), [])
+        self.assertEqual(plugins.install(self.project), [], "no copy, so no plugin rebuild")
+        cpp.write_bytes(lf + b"// edited\n")
+        self.assertFalse(plugins.status(self.project)["UETKEditor"]["up_to_date"], "a real change still counts")
+
     def test_stale_warnings(self):
         self.assertEqual(plugins.stale_warnings(self.project), [], "nothing installed: nothing to warn about")
         plugins.install(self.project)

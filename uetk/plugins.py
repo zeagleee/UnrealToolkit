@@ -25,6 +25,18 @@ def _source_files(root):
                   if p.is_file() and not set(p.relative_to(root).parts) & set(_BUILD_DIRS))
 
 
+_TEXT_SUFFIXES = {".cpp", ".h", ".inl", ".cs", ".uplugin", ".ini", ".json", ".txt", ".py"}
+
+
+def _same(src, dst):
+    """Whether dst holds src's content. Text files compare without carriage returns: a clone with Git's autocrlf and
+    one without differ only in line endings, which mustn't count as out of date (or trigger a plugin rebuild)."""
+    a, b = src.read_bytes(), dst.read_bytes()
+    if a == b:
+        return True
+    return src.suffix.lower() in _TEXT_SUFFIXES and a.replace(b"\r\n", b"\n") == b.replace(b"\r\n", b"\n")
+
+
 def plugin_dir(project, name):
     return project.root / "Plugins" / name
 
@@ -53,7 +65,7 @@ def install(project, names=None):
         for rel in _source_files(source):
             src, dst = source / rel, dest / rel
             existed = dst.exists()
-            if not existed or src.read_bytes() != dst.read_bytes():
+            if not existed or not _same(src, dst):
                 dst.parent.mkdir(parents=True, exist_ok=True)
                 shutil.copy2(src, dst)
                 changes.append(f"{name}: {'updated' if existed else 'added'} {rel.as_posix()}")
@@ -72,7 +84,7 @@ def status(project):
         source, dest = ROOT / name, plugin_dir(project, name)
         installed = (dest / f"{name}.uplugin").exists()
         stale = [rel for rel in _source_files(source)
-                 if not (dest / rel).exists() or (source / rel).read_bytes() != (dest / rel).read_bytes()]
+                 if not (dest / rel).exists() or not _same(source / rel, dest / rel)]
         dll = dll_path(project, name)
         newest_source = max(((dest / rel).stat().st_mtime for rel in _source_files(dest)), default=0)
         out[name] = {

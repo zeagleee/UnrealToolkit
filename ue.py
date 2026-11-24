@@ -120,7 +120,7 @@ def _warn_stale_plugins(p):
 
 def cmd_build(p, args):
     _warn_stale_plugins(p)
-    target ={"editor": p.editor_target, "game": p.game_target}.get(args.target, args.target)
+    target = {"editor": p.editor_target, "game": p.game_target}.get(args.target, args.target)
     restarted_level = None
     keep_no_throttle = state.throttle_claimed(p)
     if target == p.editor_target and procs.editor_pids(p):

@@ -25,7 +25,8 @@
 - `import ue` and the `uetk` modules work on Linux and macOS; the Windows-only parts (process discovery,
   launching, screenshots, `bridge install`) say so there instead of failing on import.
 - `ue.py build`, `editor start|restart` and `py` warn when the project's copy of a toolkit plugin differs from the
-  toolkit's (run `ue.py plugins install`, then `ue.py build`).
+  toolkit's (run `ue.py plugins install`, then `ue.py build`). That check, `plugins status` and `plugins install`
+  ignore differences in line endings alone.
 - `ue.py --version`.
 - Installable with pipx: `pipx install git+https://github.com/zeagleee/UnrealToolkit` gives a `ue` command.
 - Generated references: `docs/commands.md` (every command) and `docs/helpers.md` (every editor-side helper),
