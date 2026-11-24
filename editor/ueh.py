@@ -537,10 +537,31 @@ def _actor_summary(a):
     }
 
 
-def actors(cls=None, name=None, limit=500):
-    """Actors in the editor level. cls: substring of class name; name: substring of label/name."""
+def _world_arg(world):
+    """None: the editor level (in a game process, the game world). 'game' or 'pie': the running game's world.
+    A World object: that world. Returns None for the editor level."""
+    if world in (None, "editor"):
+        return None if is_editor() else game_world()
+    if world in ("game", "pie"):
+        found = game_world()
+        if found is None:
+            raise RuntimeError("no game running (start PIE, or use --instance with a ue.py net process)")
+        return found
+    return world
+
+
+def _all_actors(world):
+    w = _world_arg(world)
+    if w is None:
+        return _sub(unreal.EditorActorSubsystem).get_all_level_actors()
+    return list(unreal.GameplayStatics.get_all_actors_of_class(w, unreal.Actor))
+
+
+def actors(cls=None, name=None, limit=500, world=None):
+    """Actors in the editor level, or with world='game' in the running game (PIE or a ue.py net process).
+    cls: substring of class name; name: substring of label/name."""
     out = []
-    for a in _sub(unreal.EditorActorSubsystem).get_all_level_actors():
+    for a in _all_actors(world):
         if cls and cls.lower() not in a.get_class().get_name().lower():
             continue
         if name and name.lower() not in (a.get_actor_label() + "|" + a.get_name()).lower():
@@ -551,9 +572,10 @@ def actors(cls=None, name=None, limit=500):
     return out
 
 
-def actor(label):
-    """Find a level actor by exact label, then by object name, then by unique label substring."""
-    all_actors = _sub(unreal.EditorActorSubsystem).get_all_level_actors()
+def actor(label, world=None):
+    """Find an actor by exact label, then by object name, then by unique label substring: in the editor level, or
+    with world='game' in the running game."""
+    all_actors = _all_actors(world)
     for key in (lambda a: a.get_actor_label() == label, lambda a: a.get_name() == label):
         for a in all_actors:
             if key(a):
@@ -564,13 +586,43 @@ def actor(label):
     raise LookupError("no unique actor '%s' (%d partial matches)" % (label, len(partial)))
 
 
-def spawn(class_or_path, location=(0, 0, 0), rotation=(0, 0, 0), label=None):
-    """Spawn an actor in the editor level from a class or Blueprint path."""
-    a = _sub(unreal.EditorActorSubsystem).spawn_actor_from_class(cls(class_or_path), _vec(location), _rot(rotation))
-    if a is None:
-        raise RuntimeError("spawn failed")
+def spawn(class_or_path, location=(0, 0, 0), rotation=(0, 0, 0), label=None, world=None, props=None, owner=None,
+          attach_to=None, socket=None, scale=None):
+    """Spawn an actor from a class or Blueprint path: in the editor level, or with world='game' in the running game
+    (PIE, or a ue.py net process: spawn on the server and replicated actors reach the clients).
+    props {name: value} are set before the construction script and BeginPlay run in the game (expose-on-spawn
+    variables, any property); in the editor level they're set after. owner: an actor (or label) to own it;
+    attach_to: an actor (or label) to attach to, keeping the world transform, at socket."""
+    import uprop
+    w = _world_arg(world)
+    if w is None:
+        a = _sub(unreal.EditorActorSubsystem).spawn_actor_from_class(cls(class_or_path), _vec(location), _rot(rotation))
+        if a is None:
+            raise RuntimeError("spawn failed")
+        for key, value in (props or {}).items():
+            uprop.set_prop(a, key, value)
+    else:
+        lib = getattr(unreal, "UETKGameLibrary", None)
+        if lib is None:
+            raise RuntimeError("spawning into a running game needs the UETKEditor plugin (ue.py plugins install)")
+        transform = unreal.Transform(location=_vec(location), rotation=_rot(rotation), scale=_vec(scale or (1, 1, 1)))
+        owner_actor = actor(owner, world=w) if isinstance(owner, str) else owner
+        a = lib.begin_spawn(w, cls(class_or_path), transform, owner_actor, True)
+        if a is None:
+            raise RuntimeError("could not spawn %s in %s" % (class_or_path, w.get_name()))
+        try:
+            for key, value in (props or {}).items():
+                uprop.set_prop(a, key, value)  # before the construction script and BeginPlay
+        finally:
+            lib.finish_spawn(a, transform)
+    if scale is not None and w is None:
+        a.set_actor_scale3d(_vec(scale))
     if label:
         a.set_actor_label(label)
+    if attach_to is not None:
+        parent = actor(attach_to, world=w) if isinstance(attach_to, str) else attach_to
+        keep = unreal.AttachmentRule.KEEP_WORLD
+        a.attach_to_actor(parent, unreal.Name(socket or "None"), keep, keep, keep, False)
     return _actor_summary(a)
 
 
@@ -584,10 +636,17 @@ def move(label, location=None, rotation=None):
     return _actor_summary(a)
 
 
-def destroy(*labels):
-    """Delete level actors by label."""
-    sub = _sub(unreal.EditorActorSubsystem)
-    return {label: sub.destroy_actor(actor(label)) for label in labels}
+def destroy(*labels, world=None):
+    """Delete actors by label: from the editor level, or with world='game' from the running game."""
+    w = _world_arg(world)
+    if w is None:
+        sub = _sub(unreal.EditorActorSubsystem)
+        return {label: sub.destroy_actor(actor(label)) for label in labels}
+    out = {}
+    for label in labels:
+        actor(label, world=w).destroy_actor()
+        out[label] = True
+    return out
 
 
 def select(*labels):

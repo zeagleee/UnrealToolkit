@@ -77,7 +77,10 @@ Forced keys reach gameplay input, not a focused widget, so tests can't drive men
 - **Done when:** a scenario starts PIE, opens a menu, clicks a button by its label and checks what happened, with the
   editor in the background.
 
-### [ ] Spawning into a PIE or game world
+### [x] Spawning into a PIE or game world
+Done 2026-11-24: `ueh.spawn(..., world='game')` (README, "Spawning into the running game"), checked in PIE on 5.8 and
+5.6 and on a `ue.py net` server and client on 5.8. Still open: the 5.7 run (its editor stopped at a startup dialog).
+
 `GameplayStatics.begin_deferred_actor_spawn_from_class` isn't exposed to Python, so scripts can't spawn into PIE.
 - A BlueprintCallable in UETKEditor that spawns a class into a given world, with expose-on-spawn values set before
   `BeginPlay`. `ueh.spawn(..., world=ueh.pie_world())`.

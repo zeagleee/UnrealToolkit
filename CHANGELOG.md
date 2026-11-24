@@ -6,6 +6,10 @@
   tree; click, type, set values and read text by label or name; wait for a widget in scenarios; open a widget.
   Widget Blueprints built from a spec and read back.
 - `bpedit` gains `bound_event` (a widget's or component's event, as the editor's "+" buttons add it).
+- **Spawning into the running game:** `ueh.spawn(..., world='game')` in PIE or a `ue.py net` process, with
+  properties (expose-on-spawn variables) set before the construction script and BeginPlay; owner, attach, scale.
+  `actors`, `actor` and `destroy` take `world='game'` too.
+- `ue.py editor start` names a startup dialog after about 45 s instead of waiting out its timeout.
 
 ## 0.1.0 (2026-11-24)
 

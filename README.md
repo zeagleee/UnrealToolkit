@@ -86,6 +86,7 @@ In `ue.py py`, `unreal` and `ueh` (`editor/ueh.py`) are pre-imported; `ueh.help(
 - properties: `props`, `get`, `set`, `export_text` (Blueprint paths resolve to the CDO; `export_text` shows every UPROPERTY incl. BP variables)
 - Blueprints: `compile_bp`, `compile_bps`, `reparent_bp`; data tables: `dt_json`, `dt_fill`
 - level: `level`, `open_level`, `save_level`, `actors`, `actor`, `spawn`, `move`, `destroy`, `select`, `components`, `camera`, `set_camera`, `focus`
+  (`spawn`, `actors`, `actor` and `destroy` take `world='game'` for the running game: below, "Spawning into the running game")
 - PIE: `pie_start`, `pie_stop`, `is_pie`, `pie_world`, `player`, `console`; saving: `dirty`, `save`, `save_object`
 
 Variables persist between `py` calls within one editor session. Edits to `ueh.py`, `agent_bridge.py`, `scenario.py`
@@ -485,6 +486,34 @@ In scenarios: `yield ui.wait('Paused')`, then `ui.click('Resume')`.
   - `BlueprintEditorLibrary.get_blueprint_parent_class` exists from 5.8; the asset registry's `ParentClass` tag has it
     on every version.
 
+## Spawning into the running game
+
+`ueh.spawn(..., world='game')` spawns into PIE or a `ue.py net` game process (in a game process it's the default),
+with properties set before the actor's construction script and BeginPlay run. It needs the UETKEditor plugin.
+
+```python
+ueh.spawn('/Game/BP_Pickup', (300, 0, 120), world='game', props={'Amount': 5, 'Kind': 'gold'}, label='Coin')
+ueh.spawn('/Game/BP_Hat', (0, 0, 90), world='game', attach_to=pawn, scale=(0.5, 0.5, 0.5))  # keeps its world spot
+ueh.actors(cls='BP_Pickup', world='game'); ueh.destroy('Coin', world='game')
+```
+
+```
+ue.py --instance server py "ueh.spawn('/Game/BP_Pickup', (300, 0, 120), props={'Amount': 5})"   # clients see it
+```
+
+- **`props`** takes any property, Blueprint variables included, with the same loose values as the rest of the toolkit
+  (lists for vectors and colours, enum names, asset paths). Expose-on-spawn variables are just the usual case.
+- **On a net server,** spawn there: replicated actors and their replicated variables reach the clients.
+- **Checked on UE 5.8 (2026-11-24):**
+  - In PIE, a Blueprint spawned with two expose-on-spawn values, and its construction script saw them.
+  - A second actor attached to the player's character and followed it.
+  - On a `ue.py net` listen server, the same Blueprint spawned with `--instance server`, and the client saw a simulated
+    proxy carrying the replicated values, the one set in the construction script included.
+- **Checked on 5.6:** the same PIE test. **5.7:** the plugin builds; the test is untried there.
+- **What tripped up the first version:** Python can't spawn deferred (`BeginDeferredActorSpawnFromClass` and
+  `FinishSpawningActor` aren't exposed), and setting properties after a normal spawn is too late for the construction
+  script and BeginPlay. The plugin's `UETKGameLibrary.begin_spawn` / `finish_spawn` split the spawn around them.
+
 ## Importing
 
 `ue.py import` (`importer` in `ue.py py`; `editor/importer.py`) imports files and whole folders: static and skeletal
@@ -683,7 +712,8 @@ bpedit.compile('/Game/BP_Door'); ueh.save('/Game/BP_Door')
   - Native (C++) components: set them on the CDO's component (`cdo.get_editor_property('Name').set_editor_property(...)`), then compile and save.
 - **Not exposed to Python:**
   - `SubsystemBlueprintLibrary`: iterate `unreal.ObjectIterator(unreal.EnhancedInputLocalPlayerSubsystem)` instead.
-  - `GameplayStatics.begin_deferred_actor_spawn_from_class`: no spawning into a PIE world. Move existing actors, or use another PIE player as an obstacle.
+  - `GameplayStatics.begin_deferred_actor_spawn_from_class`: `ueh.spawn(..., world='game')` spawns into PIE through the
+    plugin instead ("Spawning into the running game").
   - Some settings only take their C++ name: `set_editor_property('PlayNumberOfClients', 2)` on `Default__LevelEditorPlaySettings` works, the snake_case name fails.
 - **Git Bash:** every `/Game/...` argument, `ue.py editor start --map` included, needs `MSYS_NO_PATHCONV=1`. Without it the path is rewritten, and the editor silently opens the startup map.
 
@@ -716,7 +746,7 @@ cost and scalability, networking, online sessions, project setup, packaging, imp
 | `editor/ui.py` | UnrealEditor or a game process | UMG: the widgets on screen, clicking and typing, Widget Blueprints from a spec (`unreal.UETKWidgetLibrary`) |
 | `editor/importer.py` | UnrealEditor (or headless) | importing files and folders with presets, the source record in each asset, reimport of changed sources |
 | `editor/vfx.py`, `vfx_assets.py`, `vfx_presets.py` | UnrealEditor (presets: any Python) | VFX spec builder, generated particle materials/textures, presets |
-| `plugin/UETKEditor` | UnrealEditor (C++ plugin, copied into projects) | offscreen renders (`unreal.UETKEditorLibrary`, `FUETKCapture` for other plugins), Blueprint graphs, material graphs and compile results (`unreal.UETKMaterialLibrary`) |
+| `plugin/UETKEditor` | UnrealEditor (C++ plugin, copied into projects) | offscreen renders (`unreal.UETKEditorLibrary`, `FUETKCapture` for other plugins), spawning into the running game (`unreal.UETKGameLibrary`), Blueprint graphs, material graphs and compile results (`unreal.UETKMaterialLibrary`) |
 | `uetk/perf.py` | system Python | `ue.py perf`: CSV profiler runs, parsing (header at the end), summaries, A/B |
 | `uetk/net.py` | system Python | `ue.py net`: game processes with their own bridges, session state, merged logs, `NetSession` for test scripts |
 | `uetk/plugins.py` | system Python | `ue.py plugins install/status`: copies the toolkit's plugins into a project |
