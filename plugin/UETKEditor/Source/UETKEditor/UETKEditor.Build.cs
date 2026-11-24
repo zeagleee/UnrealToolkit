@@ -19,7 +19,9 @@ public class UETKEditor : ModuleRules
 		{
 			"AdvancedPreviewScene",
 			"AssetRegistry",
+			"AssetTools",
 			"BlueprintGraph",
+			"DataValidation",
 			"Json",
 			"RenderCore",
 			"RHI",

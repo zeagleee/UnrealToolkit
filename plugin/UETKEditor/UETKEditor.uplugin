@@ -3,7 +3,7 @@
 	"Version": 1,
 	"VersionName": "1.0",
 	"FriendlyName": "UnrealToolkit Editor",
-	"Description": "Editor-only helpers for UnrealToolkit (ue.py) where Python can't reach: offscreen renders of level views, actors, assets and UMG widgets to PNG, Blueprint graph editing, and reading material graphs and compile errors.",
+	"Description": "Editor-only helpers for UnrealToolkit (ue.py) where Python can't reach: offscreen renders of level views, actors, assets and UMG widgets to PNG, Blueprint graph editing, reading material graphs and compile errors, and validation results.",
 	"Category": "Editor",
 	"CreatedBy": "UnrealToolkit",
 	"CanContainContent": false,
@@ -15,6 +15,12 @@
 			"Name": "UETKEditor",
 			"Type": "UncookedOnly",
 			"LoadingPhase": "Default"
+		}
+	],
+	"Plugins": [
+		{
+			"Name": "DataValidation",
+			"Enabled": true
 		}
 	]
 }

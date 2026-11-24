@@ -16,6 +16,9 @@ VFX            vfx install|status|presets|create|preview|describe|place|modules 
 Render         render view|pie|actor|asset|widget (offscreen PNGs via the UETKEditor plugin)
 Plugins        plugins install|status (the toolkit's C++ editor plugins, copied into the project and built with it)
 Multiplayer    net start|status|stop|logs|run (server + clients as game processes; --instance NAME targets one)
+Content        mat, input, import, ui (materials, Enhanced Input, importing, UMG: specs in, assets out)
+Checks         validate (Data Validation, Blueprint compiles, broken references, redirectors, textures, map check;
+               exit code 1 on errors, for commit hooks and CI)
 """
 import argparse
 import json
@@ -609,6 +612,43 @@ def cmd_ui(p, args):
     return _print_response(Bridge(p).call(code, timeout=args.timeout), "problems")
 
 
+def cmd_validate(p, args):
+    from uetk import procs
+    roots = args.paths or None
+    if args.fix_redirectors:
+        code = f"validate.fix_redirectors({(roots or ['/Game'])!r})"
+    else:
+        kwargs = {"roots": roots}
+        if args.checks:
+            kwargs["checks"] = args.checks if args.checks in ("all", "default") else args.checks.split(",")
+        if args.skip:
+            kwargs["skip"] = args.skip.split(",")
+        if args.maps:
+            kwargs["maps"] = "all" if args.maps == ["all"] else args.maps
+        if args.max_texture_size:
+            kwargs["max_texture_size"] = args.max_texture_size
+        if args.naming:
+            kwargs["naming"] = True
+        if args.strict:
+            kwargs["fail_on"] = "warning"
+        kwargs = {k: v for k, v in kwargs.items() if v is not None}
+        code = (f"_r = validate.run(**{kwargs!r})\n"
+                f"{{'result': _r, 'text': validate.report(_r, limit={args.limit!r})}}")
+    live = bool(procs.editor_pids(p)) and not args.headless
+    if not live:
+        print("No editor running: validating headless ...", file=sys.stderr, flush=True)
+    resp = Bridge(p).call(code, timeout=args.timeout) if live else run_headless(p, code, timeout=args.timeout)
+    if not resp["ok"]:
+        _print_response(resp, "errors")
+        return 2
+    out = resp["result"]
+    if args.fix_redirectors:
+        print(_dumps(out))
+        return 1 if out["remaining"] else 0
+    print(_dumps(out["result"]) if args.json else out["text"])
+    return 1 if out["result"]["failed"] else 0
+
+
 def cmd_exec(p, args):
     code = f"ueh.console({args.command!r}, pie={args.pie})"
     return _print_response(Bridge(p).call(code, timeout=args.timeout), "all")
@@ -1052,6 +1092,25 @@ def build_parser():
     s.add_argument("--timeout", type=float, default=60)
     s.set_defaults(fn=cmd_ui)
 
+    s = sub.add_parser("validate", help="check the project: Data Validation, Blueprint compile errors, broken "
+                                        "references, redirectors, texture sizes, map check (also unused assets and "
+                                        "naming, opt-in); exit code 1 on errors (editor/validate.py)")
+    s.add_argument("paths", nargs="*", help="content folders to check (default /Game, or roots in .uetk/validate.json)")
+    s.add_argument("--checks", help="comma-separated checks to run instead of the defaults, or all: references, "
+                                    "redirectors, textures, naming, unused, blueprints, data, maps")
+    s.add_argument("--skip", help="comma-separated checks to leave out")
+    s.add_argument("--maps", nargs="+", help="maps for the map check (default: the open level), or all")
+    s.add_argument("--max-texture-size", type=int, help="largest texture side before a warning (default 4096)")
+    s.add_argument("--naming", action="store_true", help="check name prefixes (BP_, M_, T_...) by asset class")
+    s.add_argument("--strict", action="store_true", help="warnings fail too (exit code 1)")
+    s.add_argument("--fix-redirectors", action="store_true", help="fix up the redirectors under the paths instead: "
+                   "resave their referencers and delete them")
+    s.add_argument("--headless", action="store_true", help="run headless even when an editor is running")
+    s.add_argument("--json", action="store_true", help="every finding as JSON instead of the text report")
+    s.add_argument("--limit", type=int, default=200, help="most findings in the text report (default 200)")
+    s.add_argument("--timeout", type=float, default=3600)
+    s.set_defaults(fn=cmd_validate)
+
     s = sub.add_parser("exec", help="run a console command in the editor (or PIE with --pie)")
     s.add_argument("command")
     s.add_argument("--pie", action="store_true")
@@ -1106,11 +1165,40 @@ def build_parser():
     return parser
 
 
+def _msys_root():
+    """Git Bash's install folder, which it puts in front of arguments that start with / (/Game/X arrives as
+    C:/Program Files/Git/Game/X). None outside Git Bash or with MSYS_NO_PATHCONV set."""
+    import os
+    if not os.environ.get("MSYSTEM") or os.environ.get("MSYS_NO_PATHCONV"):
+        return None
+    exe = os.environ.get("EXEPATH", "")
+    for candidate in (exe, os.path.dirname(exe)):
+        if candidate and os.path.isdir(os.path.join(candidate, "usr", "bin")):
+            return candidate.replace("\\", "/").rstrip("/")
+    return None
+
+
+def _undo_msys_paths(argv):
+    """Put back content paths Git Bash rewrote: an argument (or the value after `--opt=`) under its install folder
+    that doesn't exist there was a /Game/... path."""
+    import os
+    root = _msys_root()
+    if not root:
+        return argv
+    out = []
+    for arg in argv:
+        head, sep, value = arg.partition("=") if arg.startswith("--") else ("", "", arg)
+        if value.lower().startswith(root.lower() + "/") and not os.path.exists(value):
+            arg = head + sep + value[len(root):]
+        out.append(arg)
+    return out
+
+
 def main(argv=None):
     if hasattr(sys.stdout, "reconfigure"):
         sys.stdout.reconfigure(encoding="utf-8", errors="replace")
         sys.stderr.reconfigure(encoding="utf-8", errors="replace")
-    args = build_parser().parse_args(argv)
+    args = build_parser().parse_args(_undo_msys_paths(sys.argv[1:] if argv is None else argv))
     try:
         return args.fn(Project(args.project, instance=args.instance), args) or 0
     except ToolkitError as exc:

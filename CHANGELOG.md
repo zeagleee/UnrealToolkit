@@ -10,6 +10,14 @@
   properties (expose-on-spawn variables) set before the construction script and BeginPlay; owner, attach, scale.
   `actors`, `actor` and `destroy` take `world='game'` too.
 - `ue.py editor start` names a startup dialog after about 45 s instead of waiting out its timeout.
+- **Validation:** `ue.py validate` / `editor/validate.py`: Data Validation, Blueprint compiles, broken references,
+  redirectors, texture sizes, map check, and opt-in unused assets and naming rules. Settings and ignore rules in
+  `.uetk/validate.json`, JSON output, exit code 1 on errors. `--fix-redirectors` fixes redirectors without the
+  engine's dialog. New `UETKValidateLibrary` in the UETKEditor plugin, which now turns on Data Validation.
+- `ueh.rename` rescans the asset registry first, so a referencer saved moments before isn't left pointing at the
+  old name; `ueh.refresh_registry` does that rescan. `ueh.fix_redirectors` works again (it called an API Python
+  doesn't have).
+- `ue.py` puts back `/Game/...` arguments that Git Bash rewrote; `MSYS_NO_PATHCONV=1` is no longer needed.
 
 ## 0.1.0 (2026-11-24)
 

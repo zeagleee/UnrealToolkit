@@ -392,8 +392,23 @@ def duplicate(src, dst):
     return EAL.duplicate_asset(_package(src), _package(dst))
 
 
+def refresh_registry(root="/Game"):
+    """Bring the asset registry's dependencies up to date for packages saved this session. Right after a save the
+    registry still has a package's old dependencies (waiting for it doesn't help), so a rename or a validation run
+    would miss a referencer that was just saved. About 0.1 s per 1000 packages."""
+    registry = _registry()
+    packages = sorted({str(d.package_name) for d in registry.get_assets_by_path(root, recursive=True,
+                                                                                include_only_on_disk_assets=True)})
+    if packages:
+        registry.scan_modified_asset_files(packages)
+    return len(packages)
+
+
 def rename(src, dst):
-    """Rename/move an asset (leaves a redirector; see fix_redirectors)."""
+    """Rename/move an asset. The engine loads, fixes and saves the referencers the asset registry knows about, and
+    leaves a redirector only when it can't. The registry is refreshed first: a referencer saved moments before
+    would otherwise be missed, and keep the old name on disk with no redirector behind it."""
+    refresh_registry("/" + _package(src).strip("/").split("/")[0])
     return EAL.rename_asset(_package(src), _package(dst))
 
 
@@ -406,12 +421,10 @@ def delete(path):
 
 
 def fix_redirectors(path="/Game"):
-    """Fix up and remove redirectors under a folder."""
-    redirectors = [d.get_asset() for d in _registry().get_assets_by_path(path, recursive=True)
-                   if str(d.asset_class_path.asset_name) == "ObjectRedirector"]
-    if redirectors:
-        unreal.AssetToolsHelpers.get_asset_tools().fixup_referencers(redirectors)
-    return len(redirectors)
+    """Fix up and remove redirectors under a folder (UETKEditor plugin; validate.fix_redirectors).
+    Returns {'fixed': [...], 'remaining': [...]}."""
+    import validate
+    return validate.fix_redirectors(path)
 
 
 def import_files(files, dest, replace=True, save=True):

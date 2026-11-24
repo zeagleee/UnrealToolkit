@@ -65,8 +65,8 @@ Still open: import options for glTF files (the engine's defaults are used).
 
 ### [x] Menus and HUD in a running game (UMG)
 Done 2026-11-24: `ue.py ui` / `editor/ui.py`, `bpedit.bound_event` (README, "Menus and HUD"), with Widget Blueprints
-built from a spec. Checked in PIE on 5.8 and 5.6, in a `ue.py net` client on 5.8, building headless on 5.7. Still open:
-widget rectangles (empty geometry in every run here), ListView/TileView entries, and the in-game part on 5.7.
+built from a spec. Checked in PIE on 5.6, 5.7 and 5.8, and in a `ue.py net` client on 5.8. Still open: widget
+rectangles (empty geometry in every run here) and ListView/TileView entries.
 
 Forced keys reach gameplay input, not a focused widget, so tests can't drive menus today without project code.
 - `ueh.ui()`: the live widget tree of the PIE or game world (class, name, text, visibility, on-screen rect).
@@ -78,8 +78,8 @@ Forced keys reach gameplay input, not a focused widget, so tests can't drive men
   editor in the background.
 
 ### [x] Spawning into a PIE or game world
-Done 2026-11-24: `ueh.spawn(..., world='game')` (README, "Spawning into the running game"), checked in PIE on 5.8 and
-5.6 and on a `ue.py net` server and client on 5.8. Still open: the 5.7 run (its editor stopped at a startup dialog).
+Done 2026-11-24: `ueh.spawn(..., world='game')` (README, "Spawning into the running game"), checked in PIE on 5.6, 5.7
+and 5.8, and on a `ue.py net` server and client on 5.7 and 5.8.
 
 `GameplayStatics.begin_deferred_actor_spawn_from_class` isn't exposed to Python, so scripts can't spawn into PIE.
 - A BlueprintCallable in UETKEditor that spawns a class into a given world, with expose-on-spawn values set before
@@ -92,7 +92,11 @@ Done 2026-11-24: `ueh.spawn(..., world='game')` (README, "Spawning into the runn
 
 Most projects need these:
 
-### [ ] Validation: `ue.py validate`
+### [x] Validation: `ue.py validate`
+Done 2026-11-24: `ue.py validate` / `editor/validate.py` (README, "Validating the project"), checked on 5.6, 5.7 and 5.8,
+windowed and headless. Still open: a `materials` check that compiles every material and reports errors (the engine's
+material validator is off by default); checking only the files a commit changes; a sample commit hook and CI job.
+
 - Data Validation (`EditorValidatorSubsystem`), map check, Blueprint compile errors across the project, broken
   references, leftover redirectors, unused assets, oversized textures, optional naming rules.
 - JSON output, and a non-zero exit code on errors, so it can gate a commit hook or CI.

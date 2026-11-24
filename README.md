@@ -75,6 +75,7 @@ with the editor's rights (your files, network, project). It's meant for your own
 | Enhanced Input: read or build actions and mapping contexts, map keys, contexts on Blueprints and the running player | `ue.py input dump`, `input create --spec i.json`, `input map IMC_X IA_Y LeftShift`, `input use BP_Controller IMC_X`, `input active` (below, "Enhanced Input") |
 | Menus and HUD in the running game; Widget Blueprints from a spec | `ue.py ui tree`, `ui click "Save game"`, `ui type PlayerName Ada`, `ui wait Paused`, `ui create WBP_X --spec m.json` (below, "Menus and HUD") |
 | Import meshes, animations, textures and sounds (folders too) with presets; reimport what changed | `ue.py import D:/Art --to /Game/Art`, `import --status /Game/Art`, `import --reimport /Game/Art` (below, "Importing") |
+| Check the project before a commit or in CI (exit code 1 on errors) | `ue.py validate [/Game/Folder]`, `--checks all`, `--json`, `--fix-redirectors` (below, "Validating the project") |
 | Hung editor | `ue.py kill` (loses unsaved work; check `ueh.dirty()` first) |
 | Bridge in self-launched editors | `ue.py bridge install` / `uninstall` (per-user `UE_PYTHONPATH`) |
 
@@ -82,7 +83,7 @@ with the editor's rights (your files, network, project). It's meant for your own
 
 In `ue.py py`, `unreal` and `ueh` (`editor/ueh.py`) are pre-imported; `ueh.help()` lists everything:
 
-- assets: `find`, `info`, `deps`, `refs`, `duplicate`, `rename`, `delete`, `fix_redirectors`, `import_files`, `create_bp`, `create_asset`
+- assets: `find`, `info`, `deps`, `refs`, `duplicate`, `rename`, `delete`, `fix_redirectors`, `refresh_registry`, `import_files`, `create_bp`, `create_asset`
 - properties: `props`, `get`, `set`, `export_text` (Blueprint paths resolve to the CDO; `export_text` shows every UPROPERTY incl. BP variables)
 - Blueprints: `compile_bp`, `compile_bps`, `reparent_bp`; data tables: `dt_json`, `dt_fill`
 - level: `level`, `open_level`, `save_level`, `actors`, `actor`, `spawn`, `move`, `destroy`, `select`, `components`, `camera`, `set_camera`, `focus`
@@ -131,7 +132,6 @@ same-size edits are never served from a stale `.pyc`.
 - **What it changes:** it loads, and so compiles, every Blueprint, and saves nothing.
 - **What it skips by default:** the template folders (Mannequins, LevelPrototyping, StarterContent) and the External Actors/Objects folders. Add more with `--skip /Game/SomePack`.
 - **Not yet tested:** level Blueprint export. The project it was first used on has no level Blueprints, so the lookup (`<map>.<map>:PersistentLevel.<map>`) hasn't been tried on a map that has one.
-- **Git Bash:** prefix it with `MSYS_NO_PATHCONV=1` when you pass `/Game/...` roots.
 
 **What each Blueprint's `.txt` holds** (the format is documented at the top of `uetk/bpdump.py`):
 - the parent class
@@ -160,7 +160,9 @@ again after a toolkit update: a `.cpp`-only change can go in with `ue.py livecod
 `build --restart`. `ue.py plugins status` shows each one as installed, built, or loaded.
 
 - **UETKEditor:** offscreen renders (`ue.py render`), Blueprint graph editing (`bpedit`), reading material
-  graphs and compile errors (`mat`), UMG widget trees (`ui`), and import helpers (collision, LOD groups). It also holds the shared capture code (`FUETKCapture`, `FUETKContactSheet` in
+  graphs and compile errors (`mat`), UMG widget trees (`ui`), import helpers (collision, LOD groups), and Data
+  Validation, map check and redirector fix-up results (`validate`). It turns on the engine's Data Validation plugin
+  (on by default anyway). It also holds the shared capture code (`FUETKCapture`, `FUETKContactSheet` in
   `UETKCapture.h`).
 - **UETKVfx:** Niagara (`ue.py vfx`). It needs UETKEditor, and `vfx install` brings it along.
 - **Live Coding blocks other builds on the same engine.** While one editor has Live Coding active, UBT refuses to build
@@ -464,9 +466,8 @@ In scenarios: `yield ui.wait('Paused')`, then `ui.click('Resume')`.
   - In PIE, `press P` opened it and paused the game. Typing a name, and clicking Save, changed the status line through
     the Blueprint. The checkbox and slider took their new values. Resume closed the menu and unpaused the game.
   - The same in a `ue.py net` client process, with `--instance client1`.
-- **Checked on 5.6 and 5.7:** the plugin builds on both. On 5.6, in a running editor, the same menu was built, opened
-  with `ui.open` in PIE and driven the same way. On 5.7 the building side (the spec, `bound_event`, the compile,
-  `describe`) ran headless; the in-game part is untried there, because that editor stopped at a startup dialog.
+- **Checked on 5.6 and 5.7:** the plugin builds on both. The same menu was built (on 5.7 headless), opened with
+  `ui.open` in PIE, and driven the same way.
 - **Not yet:**
   - Rectangles: `tree` shows a widget's position and size in viewport pixels only when Slate has arranged it, and in
     no run here (editor in the background, a net client's window) had it, so none were shown.
@@ -509,7 +510,8 @@ ue.py --instance server py "ueh.spawn('/Game/BP_Pickup', (300, 0, 120), props={'
   - A second actor attached to the player's character and followed it.
   - On a `ue.py net` listen server, the same Blueprint spawned with `--instance server`, and the client saw a simulated
     proxy carrying the replicated values, the one set in the construction script included.
-- **Checked on 5.6:** the same PIE test. **5.7:** the plugin builds; the test is untried there.
+- **Checked on 5.6 and 5.7:** the same PIE test; on 5.7 also a net server's spawn, seen on the client with its
+  replicated values.
 - **What tripped up the first version:** Python can't spawn deferred (`BeginDeferredActorSpawnFromClass` and
   `FinishSpawningActor` aren't exposed), and setting properties after a normal spawn is too late for the construction
   script and BeginPlay. The plugin's `UETKGameLibrary.begin_spawn` / `finish_spawn` split the spawn around them.
@@ -564,6 +566,82 @@ ue.py import --reimport /Game/Props                      # reimport the ones who
 - **From DCC tools:** see "From Blender (FBX)" under "Rules of thumb" (V is flipped; linear colours in an sRGB PNG come
   out too dark). Interchange also warns about FBX meshes saved without smoothing groups: turn on the exporter's
   smoothing groups option.
+
+## Validating the project
+
+`ue.py validate` (`validate` in `ue.py py`; `editor/validate.py`) checks content and exits with code 1 when it finds
+errors, so it can gate a commit hook or a CI job. It uses the running editor when there is one and a headless editor
+otherwise. It needs the UETKEditor plugin for the `data`, `blueprints` and `maps` checks; without it those are
+reported as skipped.
+
+```
+ue.py validate                                   # the default checks on /Game
+ue.py validate /Game/Characters --checks all     # every check on one folder
+ue.py validate --maps /Game/Maps/Main /Game/Maps/Arena --strict --json
+ue.py validate --fix-redirectors                 # resave the referencers, delete the redirectors
+```
+
+```
+error   references  /Game/Props/BP_Target: references /Game/Old/MI_Target, which doesn't exist
+error   blueprints  /Game/BP_Door: This blueprint (self) is not a TextBlock, therefore ' Target ' must have a connection.
+warning textures    /Game/UI/T_Logo: 300x200 isn't a power of two, so it has no mips and doesn't stream (...)
+warning maps        /Game/Maps/Main: StaticMeshActor_0 Static mesh actor has NULL StaticMesh property
+FAILED: 2 error(s), 2 warning(s), 0 note(s) in /Game (checked: references 878, redirectors 0, textures 39, ...)
+```
+
+| Check | Finds | Default |
+|-------|-------|---------|
+| `references` | references to packages that don't exist: hard ones are errors (the asset loads with them cleared), soft ones warnings | on |
+| `redirectors` | leftover redirectors (warnings); `--fix-redirectors` fixes them | on |
+| `textures` | textures over `--max-texture-size` (4096) on a side, virtual textures exempt; sides that aren't powers of two outside the UI group | on |
+| `blueprints` | compiles every Blueprint (Widget, Anim, Editor Utility...): the compiler's errors and warnings | on |
+| `data` | Data Validation, as the Content Browser's Validate Assets runs it: the engine's and the project's validators, each asset's `IsDataValid`. It loads every asset it checks | on |
+| `maps` | map check on `--maps` (or `all` maps under the roots), else the level open in the editor | on |
+| `unused` | assets nothing references, as notes. Maps, Editor Utilities, and assets whose path appears in the project's `Config/` or `Source/` aren't reported; paths built at runtime aren't seen | off |
+| `naming` | name prefixes by asset class (`BP_`, `M_`, `T_`, `SM_`...), as warnings. `--naming`, `"naming": true` or naming it in `--checks` uses the common conventions in `validate.NAMING`; a `{class: prefix}` map replaces them | off |
+
+- **Project settings** go in `<Project>/.uetk/validate.json`; command-line options override them:
+  ```json
+  {"roots": ["/Game"], "exclude": ["/Game/Developers"], "checks": {"unused": true},
+   "max_texture_size": 4096, "maps": ["/Game/Maps/Main"], "naming": true,
+   "ignore": [{"check": "textures", "asset": "/Game/Sky/*"}, {"message": "*deprecated*"}],
+   "fail_on": "error"}
+  ```
+  `checks` as a list runs exactly those. Each `ignore` entry matches findings by fnmatch patterns on any of `check`,
+  `asset`, `message` and `severity`: a way to accept known findings and fail on new ones. `"fail_on": "warning"` (or
+  `--strict`) fails on warnings too.
+- **Exit codes:** 0 passed, 1 findings at the failing level, 2 it couldn't run (no editor and no headless start, PIE
+  running, an engine error).
+- **In a running editor:** it refuses while PIE runs. Map check on other maps opens each one and then the level that
+  was open; it refuses if that level has unsaved changes. `--fix-redirectors` saves the referencers, unsaved changes
+  in them included, as the Content Browser's Fix Up does.
+- **Duplicates collapse:** map check reports a message once per component; the report shows it once with `(x3)`.
+- **Checked on UE 5.6, 5.7 and 5.8 (2026-11-24),** in a windowed editor and headless, on a folder of assets with one
+  known problem each: a Blueprint with a compile error, a Child Actor Component that spawns its own Blueprint (Data
+  Validation and the compiler both report it), a material instance whose parent was deleted, a redirector left by
+  consolidating two materials, an 8192x4 and a 300x200 texture, a Blueprint without a prefix, and a level with a
+  mesh-less StaticMeshActor. Every check found its asset, and `--fix-redirectors` removed the redirector. On 5.8 it
+  also resaved referencers that still named a redirector, headless and in the editor. A whole template project
+  (889 packages, 4 maps) took 11 s in the 5.8 editor with the default checks, and 35 s headless with every check.
+- **On Epic's own template content** it found a Blueprint with a hard reference to a material that isn't shipped
+  (`BP_WobbleTarget`), a placed door in `Lvl_Combat` whose mesh is missing, and animations whose preview meshes point
+  at another project's paths (soft references, warnings).
+- **What tripped up the first version:**
+  - `EditorValidatorSubsystem.validate_assets_with_settings` works from Python, but each asset's errors and warnings
+    are in struct fields that aren't UPROPERTYs (`FValidateAssetsDetails`), so Python only gets counts. The plugin's
+    `UETKValidateLibrary.validate_assets` returns them.
+  - The engine's redirector fix-up (`IAssetTools::FixupReferencers`) ends in a modal "Redirector Update Report" that
+    blocks a script, and isn't exposed to Python anyway. The plugin does the same steps without it, headless too.
+  - A headless run only scans the asset registry on request. Without `search_all_assets(True)`, every reference into
+    plugin content (`/Niagara/...`) looked broken.
+  - Right after a save, the registry still has a package's old dependencies (waiting for it doesn't help). So a
+    script that just saved assets would get false findings, and a rename would miss the new referencer and leave it
+    pointing at a name that's gone, with no redirector. `validate` and `ueh.rename` rescan modified files first
+    (`ueh.refresh_registry`, about 0.1 s per 1000 packages).
+  - Asking for `LevelEditorSubsystem` in a headless run crashes the editor, so `validate` checks for `-run=` first.
+  - The engine's material validator is off by default (`bEnableMaterialValidation`) and only runs on save and in the
+    DataValidation commandlet, so Data Validation doesn't report material compile errors. A headless `validate` runs
+    as that commandlet would, so turning it on in the project settings takes effect there.
 
 ## Performance runs
 
@@ -715,7 +793,9 @@ bpedit.compile('/Game/BP_Door'); ueh.save('/Game/BP_Door')
   - `GameplayStatics.begin_deferred_actor_spawn_from_class`: `ueh.spawn(..., world='game')` spawns into PIE through the
     plugin instead ("Spawning into the running game").
   - Some settings only take their C++ name: `set_editor_property('PlayNumberOfClients', 2)` on `Default__LevelEditorPlaySettings` works, the snake_case name fails.
-- **Git Bash:** every `/Game/...` argument, `ue.py editor start --map` included, needs `MSYS_NO_PATHCONV=1`. Without it the path is rewritten, and the editor silently opens the startup map.
+- **Git Bash rewrites arguments that start with `/`:** `/Game/X` arrives as `C:/Program Files/Git/Game/X`. `ue.py`
+  puts such paths back (an argument under Git's install folder that doesn't exist there), so `/Game/...` arguments
+  work as typed. Other programs still need `MSYS_NO_PATHCONV=1`.
 
 More Unreal Engine knowledge that isn't about the toolkit (measuring performance, scene captures, rendering
 cost and scalability, networking, online sessions, project setup, packaging, importing from Blender) is in
@@ -746,7 +826,8 @@ cost and scalability, networking, online sessions, project setup, packaging, imp
 | `editor/ui.py` | UnrealEditor or a game process | UMG: the widgets on screen, clicking and typing, Widget Blueprints from a spec (`unreal.UETKWidgetLibrary`) |
 | `editor/importer.py` | UnrealEditor (or headless) | importing files and folders with presets, the source record in each asset, reimport of changed sources |
 | `editor/vfx.py`, `vfx_assets.py`, `vfx_presets.py` | UnrealEditor (presets: any Python) | VFX spec builder, generated particle materials/textures, presets |
-| `plugin/UETKEditor` | UnrealEditor (C++ plugin, copied into projects) | offscreen renders (`unreal.UETKEditorLibrary`, `FUETKCapture` for other plugins), spawning into the running game (`unreal.UETKGameLibrary`), Blueprint graphs, material graphs and compile results (`unreal.UETKMaterialLibrary`) |
+| `editor/validate.py` | UnrealEditor (or headless) | `ue.py validate`: Data Validation, Blueprint compiles, references, redirectors, textures, map check, unused assets, naming |
+| `plugin/UETKEditor` | UnrealEditor (C++ plugin, copied into projects) | offscreen renders (`unreal.UETKEditorLibrary`, `FUETKCapture` for other plugins), spawning into the running game (`unreal.UETKGameLibrary`), Blueprint graphs, material graphs and compile results (`unreal.UETKMaterialLibrary`), validation (`unreal.UETKValidateLibrary`) |
 | `uetk/perf.py` | system Python | `ue.py perf`: CSV profiler runs, parsing (header at the end), summaries, A/B |
 | `uetk/net.py` | system Python | `ue.py net`: game processes with their own bridges, session state, merged logs, `NetSession` for test scripts |
 | `uetk/plugins.py` | system Python | `ue.py plugins install/status`: copies the toolkit's plugins into a project |
