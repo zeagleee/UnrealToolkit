@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+## 0.2.0 (2026-11-24)
+
+- Each GitHub release has the package's sdist and wheel attached (`pipx install <wheel URL>` works too), built by
+  `.github/workflows/publish.yml`. The package metadata names its licence (MIT), Python versions and links.
 - **For contributors:** issue templates (bug report, feature request) and a pull request template in `.github/`; a
   Code of Conduct; GitHub Discussions for questions and ideas; and starter tasks filed as issues (`good first issue`,
   `help wanted`, and `needs engine` for those that need Unreal Engine).

@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools>=64"]
+requires = ["setuptools>=77"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -7,19 +7,33 @@ name = "unreal-toolkit"
 dynamic = ["version"]
 description = "Command-line control of Unreal Engine for AI coding agents and scripts"
 readme = "README.md"
-license = { file = "LICENSE" }
+license = "MIT"
+license-files = ["LICENSE"]
 requires-python = ">=3.10"
 dependencies = []
+keywords = ["unreal-engine", "ue5", "unreal", "automation", "ai-agents", "claude-code", "gamedev"]
 classifiers = [
-    "Programming Language :: Python :: 3",
+    "Development Status :: 3 - Alpha",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
     "Operating System :: Microsoft :: Windows",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
     "Topic :: Games/Entertainment",
     "Topic :: Software Development :: Build Tools",
+    "Topic :: Software Development :: Testing",
 ]
 
 [project.urls]
 Homepage = "https://github.com/zeagleee/UnrealToolkit"
+Documentation = "https://github.com/zeagleee/UnrealToolkit#readme"
 Changelog = "https://github.com/zeagleee/UnrealToolkit/blob/main/CHANGELOG.md"
+Issues = "https://github.com/zeagleee/UnrealToolkit/issues"
+Discussions = "https://github.com/zeagleee/UnrealToolkit/discussions"
 
 [project.scripts]
 ue = "ue:main"
