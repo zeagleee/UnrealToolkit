@@ -52,7 +52,7 @@ user settings.
   and `ue.py press` drives it.
 
 ### [x] Import
-Done 2026-11-24: `ue.py import` / `editor/importer.py` (README, "Importing"), checked headless on 5.6, 5.7 and 5.8.
+Done 2026-11-24: `ue.py import` / `editor/importer.py` ([docs/importing.md](docs/importing.md)), checked headless on 5.6, 5.7 and 5.8.
 Still open: import options for glTF files (the engine's defaults are used).
 
 - `ue.py import FILES... --to /Game/...`, with a preset picked from each file's type and overridable:
@@ -85,7 +85,7 @@ Forced keys reach gameplay input, not a focused widget, so tests can't drive men
   editor in the background.
 
 ### [x] Spawning into a PIE or game world
-Done 2026-11-24: `ueh.spawn(..., world='game')` (README, "Spawning into the running game"), checked in PIE on 5.6, 5.7
+Done 2026-11-24: `ueh.spawn(..., world='game')` ([docs/spawning.md](docs/spawning.md)), checked in PIE on 5.6, 5.7
 and 5.8, and on a `ue.py net` server and client on 5.7 and 5.8.
 
 `GameplayStatics.begin_deferred_actor_spawn_from_class` isn't exposed to Python, so scripts can't spawn into PIE.
@@ -100,7 +100,7 @@ and 5.8, and on a `ue.py net` server and client on 5.7 and 5.8.
 Most projects need these:
 
 ### [x] Validation: `ue.py validate`
-Done 2026-11-24: `ue.py validate` / `editor/validate.py` (README, "Validating the project"), checked on 5.6, 5.7 and 5.8,
+Done 2026-11-24: `ue.py validate` / `editor/validate.py` ([docs/validation.md](docs/validation.md)), checked on 5.6, 5.7 and 5.8,
 windowed and headless. Still open: a `materials` check that compiles every material and reports errors (the engine's
 material validator is off by default); checking only the files a commit changes; a sample commit hook and CI job.
 
@@ -257,7 +257,7 @@ imported outside it, except `editor/scenario.py`. Code in `uetk/` and `ue.py` is
   the commands table, the rules of thumb and the layout, and links to each page. Move the text as it is, and fix the
   links that pointed within the README ("below, ..."). One pull request each:
   - [x] N17: "Materials", "Enhanced Input", "Menus and HUD" to `docs/materials.md`, `docs/input.md`, `docs/ui.md`.
-  - [ ] N18: "Spawning into the running game", "Importing", "Validating the project" to `docs/spawning.md`,
+  - [x] N18: "Spawning into the running game", "Importing", "Validating the project" to `docs/spawning.md`,
     `docs/importing.md`, `docs/validation.md`.
   - [ ] N19: "VFX", "Multiplayer sessions", "Performance runs", "Editing Blueprints", "Reviewing Blueprints" and
     "Offscreen renders", one page each.
