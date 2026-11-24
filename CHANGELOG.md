@@ -31,7 +31,7 @@
   written by `scripts/gen_docs.py`; CI fails when they are out of date.
 - `docs/agents.md`: a block to paste into a project's `CLAUDE.md` or `AGENTS.md`, and the same text as a Claude Code
   skill (`skills/unreal-toolkit/`).
-- **Docs:** the README's feature sections move to one page each in `docs/`, listed under its new "Guides": Materials, Enhanced Input, Menus and HUD; Spawning into the running game, Importing, Validating the project.
+- **Docs:** the README's feature sections move to one page each in `docs/`, listed under its new "Guides": Materials, Enhanced Input, Menus and HUD; Spawning into the running game, Importing, Validating the project; VFX, Multiplayer sessions, Performance runs, Editing and Reviewing Blueprints, Offscreen renders.
 
 ## 0.1.0 (2026-11-24)
 

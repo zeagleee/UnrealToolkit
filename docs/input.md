@@ -26,7 +26,7 @@ ue.py input active                                 # the running game's player: 
 - **Actions are named by asset name** when only one InputAction has it, otherwise by path. `dump` writes them the same
   way, so its output always builds back.
 - **Blueprint logic for an action:** `g.input_action('IA_Sprint')` in `bpedit` adds the action's event node (see
-  [Editing Blueprints](../README.md#editing-blueprints)).
+  [Editing Blueprints](editing-blueprints.md)).
 - **In the running game:** `inputs.active()` lists the contexts a player has, with priorities, and
   `add_context`/`remove_context` change them. Drive keys with `ue.py press` or `ueh.key_down`: they go through the
   mappings, so triggers and modifiers run.

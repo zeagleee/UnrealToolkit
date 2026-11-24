@@ -8,8 +8,9 @@ the docs.
 holds small tasks that don't (tests of the engine-free code, CI, packaging, docs), each doable with Python 3 and git.
 To take one, open an issue or a draft pull request named after its number (N1, N2...) so nobody else starts it.
 
-**Next up.** With Unreal Engine: `scripts/selftest.py` (section 3, "Tests"), then Unreal Insights. Without it: N1 and
-N2 (the test setup and CI), then any other task in section 4.
+**Next up.** With Unreal Engine: `scripts/selftest.py` (section 3, "Tests"), then Unreal Insights, then the sample
+files N10 and N11 wait for. Without it: N21 (issue templates, in its own pull request) and N22 (the 0.2.0
+release) once the maintainer agrees.
 
 **How new features should work** (the same way `vfx` and `bpedit` already do):
 - An `editor/` Python helper, plus a `ue.py` command when it's useful from the shell.
@@ -253,13 +254,13 @@ imported outside it, except `editor/scenario.py`. Code in `uetk/` and `ue.py` is
 - [x] **N16. Helper reference.** Done 2026-11-24: `docs/helpers.md`, from the same script. The same script writes `docs/helpers.md`: the public functions of `editor/ueh.py`,
   `bpedit.py`, `mat.py`, `inputs.py`, `importer.py`, `ui.py` and `validate.py` with signatures and docstrings, read
   with `ast` (those modules import `unreal`, which only exists inside the editor).
-- [ ] **N17 to N19. Split the README** (848 lines) into `docs/`. The README keeps the overview, quickstart, security,
+- [x] **N17 to N19. Split the README** (848 lines) into `docs/`. Done 2026-11-24: the README is 300 lines, with a "Guides" list of the twelve pages; cross-references are links (`tests/test_docs.py` checks they resolve). The README keeps the overview, quickstart, security,
   the commands table, the rules of thumb and the layout, and links to each page. Move the text as it is, and fix the
   links that pointed within the README ("below, ..."). One pull request each:
   - [x] N17: "Materials", "Enhanced Input", "Menus and HUD" to `docs/materials.md`, `docs/input.md`, `docs/ui.md`.
   - [x] N18: "Spawning into the running game", "Importing", "Validating the project" to `docs/spawning.md`,
     `docs/importing.md`, `docs/validation.md`.
-  - [ ] N19: "VFX", "Multiplayer sessions", "Performance runs", "Editing Blueprints", "Reviewing Blueprints" and
+  - [x] N19: "VFX", "Multiplayer sessions", "Performance runs", "Editing Blueprints", "Reviewing Blueprints" and
     "Offscreen renders", one page each.
 - [x] **N20. Instructions for agents.** Done 2026-11-24: `docs/agents.md` and `skills/unreal-toolkit/SKILL.md`; `tests/test_docs.py` keeps them the same. `docs/agents.md`: a block projects can paste into their `CLAUDE.md` or
   `AGENTS.md` (where the toolkit is, the commands to reach for first, the rules of thumb agents trip on), and a Claude
