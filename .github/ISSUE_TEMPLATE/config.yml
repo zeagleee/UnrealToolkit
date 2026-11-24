@@ -1,5 +1,8 @@
 blank_issues_enabled: true
 contact_links:
+  - name: Question or idea
+    url: https://github.com/zeagleee/UnrealToolkit/discussions
+    about: Ask how to do something, or float an idea before it becomes a feature request.
   - name: Security problem
     url: https://github.com/zeagleee/UnrealToolkit/blob/main/README.md#security
     about: The bridge runs any Python it is given. Read the trust model before reporting; don't post exploits publicly.

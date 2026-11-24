@@ -1,8 +1,22 @@
 # Contributing
 
-Issues and pull requests are welcome. What's planned is in [TODO.md](TODO.md). Its section 4 lists small tasks that
-don't need Unreal Engine installed (tests, CI, packaging, docs); open an issue or a draft pull request named after a
-task's number (N1, N2...) to take it.
+Issues and pull requests are welcome. Questions and ideas go to
+[Discussions](https://github.com/zeagleee/UnrealToolkit/discussions). Everyone taking part follows the
+[Code of Conduct](CODE_OF_CONDUCT.md).
+
+## Finding something to work on
+
+Tasks ready to take are issues:
+
+- [`good first issue`](https://github.com/zeagleee/UnrealToolkit/labels/good%20first%20issue): small, and need only
+  Python 3 and git.
+- [`help wanted`](https://github.com/zeagleee/UnrealToolkit/labels/help%20wanted): bigger, or need a decision first.
+- [`needs engine`](https://github.com/zeagleee/UnrealToolkit/labels/needs%20engine): need Unreal Engine installed, to
+  do and to check.
+
+Comment on an issue to take it, so nobody else starts the same thing, and name its task number (N23, N24...) in your
+pull request. Everything planned is in [TODO.md](TODO.md); its section 4 lists the tasks that don't need Unreal Engine.
+For something that isn't there yet, open an issue or a discussion first.
 
 ## Reporting a problem
 
