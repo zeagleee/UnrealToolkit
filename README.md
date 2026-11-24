@@ -833,6 +833,7 @@ cost and scalability, networking, online sessions, project setup, packaging, imp
 | `uetk/perf.py` | system Python | `ue.py perf`: CSV profiler runs, parsing (header at the end), summaries, A/B |
 | `uetk/net.py` | system Python | `ue.py net`: game processes with their own bridges, session state, merged logs, `NetSession` for test scripts |
 | `uetk/plugins.py` | system Python | `ue.py plugins install/status`: copies the toolkit's plugins into a project; warns when a project's copy is out of date |
+| `scripts/` | system Python | `new_from_template.py` (projects from engine templates), `gen_docs.py` (the generated reference pages), `net_smoke_test.py` |
 | `tests/` | system Python | the engine-free tests: `python -m unittest discover -s tests` |
 | `pyproject.toml` | | packaging: `pipx install` gives a `ue` command |
 

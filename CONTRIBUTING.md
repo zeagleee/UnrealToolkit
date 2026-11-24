@@ -22,19 +22,20 @@ Give the engine version (`ue.py info` prints it), the command you ran, and what 
 
 ## Running the tests
 
-The engine-free code (`ue.py`, `uetk/` and `editor/scenario.py`) has tests that need only
+The engine-free code (`ue.py`, `uetk/`, `editor/scenario.py`, `scripts/gen_docs.py`) has tests that need only
 Python 3.10 or newer, no Unreal Engine and no packages. From the toolkit folder:
 
 ```
 python -m unittest discover -s tests                  # every test
 python -m unittest discover -s tests -p test_state.py # one file
 python -m compileall -q ue.py uetk editor scripts     # syntax of the editor-side code the tests can't import
+python scripts/gen_docs.py                            # after changing a command's help or a helper's docstring
 ```
 
 Tests use the standard library's `unittest` and write only to temporary folders. Code in `editor/` imports `unreal`,
 so the tests can't import it, except `editor/scenario.py`, which `tests/support.py` loads by path. GitHub Actions
 runs all of this on Windows and Linux with Python 3.10 and 3.13 on every push and pull request
-(`.github/workflows/tests.yml`).
+(`.github/workflows/tests.yml`), and fails when `docs/commands.md` or `docs/helpers.md` is out of date.
 
 ## Checking a change in the engine
 

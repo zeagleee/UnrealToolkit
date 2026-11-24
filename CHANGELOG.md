@@ -27,6 +27,8 @@
   toolkit's (run `ue.py plugins install`, then `ue.py build`).
 - `ue.py --version`.
 - Installable with pipx: `pipx install git+https://github.com/zeagleee/UnrealToolkit` gives a `ue` command.
+- Generated references: `docs/commands.md` (every command) and `docs/helpers.md` (every editor-side helper),
+  written by `scripts/gen_docs.py`; CI fails when they are out of date.
 
 ## 0.1.0 (2026-11-24)
 

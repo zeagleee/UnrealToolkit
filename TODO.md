@@ -248,9 +248,9 @@ imported outside it, except `editor/scenario.py`. Code in `uetk/` and `ue.py` is
   project prints the "No .uproject" error. Add it to the README's quickstart.
 
 ### Docs
-- [ ] **N15. Command reference.** `scripts/gen_docs.py` writes `docs/commands.md` from `ue.py`'s argparse (every
+- [x] **N15. Command reference.** Done 2026-11-24: `docs/commands.md`; `scripts/gen_docs.py --check` in CI and `tests/test_docs.py`. `scripts/gen_docs.py` writes `docs/commands.md` from `ue.py`'s argparse (every
   command with its arguments and help), and CI fails when the file is out of date.
-- [ ] **N16. Helper reference.** The same script writes `docs/helpers.md`: the public functions of `editor/ueh.py`,
+- [x] **N16. Helper reference.** Done 2026-11-24: `docs/helpers.md`, from the same script. The same script writes `docs/helpers.md`: the public functions of `editor/ueh.py`,
   `bpedit.py`, `mat.py`, `inputs.py`, `importer.py`, `ui.py` and `validate.py` with signatures and docstrings, read
   with `ast` (those modules import `unreal`, which only exists inside the editor).
 - [ ] **N17 to N19. Split the README** (848 lines) into `docs/`. The README keeps the overview, quickstart, security,
