@@ -6,11 +6,11 @@ the docs.
 
 **Two kinds of work.** Sections 1 to 3 need Unreal Engine installed: they're checked in a running editor. Section 4
 holds small tasks that don't (tests of the engine-free code, CI, packaging, docs), each doable with Python 3 and git.
-To take one, open an issue or a draft pull request named after its number (N1, N2...) so nobody else starts it.
+The open ones each have an issue: comment there to take one, so nobody else starts it
+([CONTRIBUTING.md](CONTRIBUTING.md#finding-something-to-work-on)).
 
 **Next up.** With Unreal Engine: `scripts/selftest.py` (section 3, "Tests"), then Unreal Insights, then the sample
-files N10 and N11 wait for. Without it: N21 (issue templates, in its own pull request) and N22 (the 0.2.0
-release) once the maintainer agrees.
+files N10 and N11 wait for. Without it: N22 (the 0.2.0 release), then N23 to N30, left for new contributors.
 
 **How new features should work** (the same way `vfx` and `bpedit` already do):
 - An `editor/` Python helper, plus a `ue.py` command when it's useful from the shell.
@@ -171,7 +171,7 @@ The parts that don't need an engine are in section 4.
   version and reports pass or fail. Run it on every supported version before a release. It also settles the untried
   cases (VFX previews on 5.6 and 5.7, level Blueprint export), and would have caught `ueh.fix_redirectors` calling an
   API Python doesn't have.
-- [ ] **Sample files for the engine-free tests:** a CSV profiler capture (`ue.py perf run`) and a `bpdump` export of a
+- [ ] **Sample files for the engine-free tests** ([#19](https://github.com/zeagleee/UnrealToolkit/issues/19)): a CSV profiler capture (`ue.py perf run`) and a `bpdump` export of a
   template project's Blueprints, with local paths scrubbed, in `tests/fixtures/`. N10 and N11 wait for these.
 
 ### Going public (done 2026-11-24)
@@ -187,13 +187,13 @@ The parts that don't need an engine are in section 4.
 - Issue templates: N21 in section 4.
 
 ### Install and reach
-- [ ] **MCP server** over the same commands, so agents in any MCP client get typed tools instead of shell lines. (The
+- [ ] **MCP server** ([#22](https://github.com/zeagleee/UnrealToolkit/issues/22)) over the same commands, so agents in any MCP client get typed tools instead of shell lines. (The
   instructions snippet and the Claude Code skill are N20 in section 4.)
-- [ ] **Linux and macOS.** Editor executables and build scripts, process discovery, screenshots (`uetk/winshot.py` is
+- [ ] **Linux and macOS** ([#21](https://github.com/zeagleee/UnrealToolkit/issues/21)). Editor executables and build scripts, process discovery, screenshots (`uetk/winshot.py` is
   Windows-only), checked on a real install. Live Coding is Windows-only. Starts after N3 (imports that work off
   Windows).
 - [ ] **Engine versions.** State the supported range (5.6–5.8 so far) and decide how far back to go.
-- [ ] **Blueprint-only projects.** `editor start` fails with "No Editor target"; launch the editor directly instead.
+- [ ] **Blueprint-only projects** ([#20](https://github.com/zeagleee/UnrealToolkit/issues/20)). `editor start` fails with "No Editor target"; launch the editor directly instead.
 
 ## 4. Small tasks that don't need Unreal Engine
 
@@ -230,9 +230,21 @@ imported outside it, except `editor/scenario.py`. Code in `uetk/` and `ue.py` is
   with `UETK_PROJECT`, and the error when there's none; `_engine_from_launcher_manifest` with a fake
   `LauncherInstalled.dat` (point `PROGRAMDATA` at a temp folder).
 - [ ] **N10. Tests for `uetk/perf.py`:** `parse_csv` (each row is a prefix of the header written at the end),
-  `summarize` and `format_compare`. Waits for the sample capture (section 3, "Tests").
+  `summarize` and `format_compare`. Waits for the sample capture (section 3, "Tests";
+  [#19](https://github.com/zeagleee/UnrealToolkit/issues/19)).
 - [ ] **N11. Tests for `uetk/bpdump.py`:** `parse_t3d` and `condense` on exported Blueprints, compared with the
-  expected `.txt` output. Waits for the sample export (section 3, "Tests").
+  expected `.txt` output. Waits for the sample export (section 3, "Tests";
+  [#19](https://github.com/zeagleee/UnrealToolkit/issues/19)).
+- [ ] **N23. Tests for `uetk/build.py`** ([#11](https://github.com/zeagleee/UnrealToolkit/issues/11)):
+  `_print_summary` on sample UBT output, `discover_test_prefixes` on `.cpp` files in a temp project, and `ubt_env`
+  with and without a bundled .NET.
+- [ ] **N24. Tests for `uetk/net.py`** ([#12](https://github.com/zeagleee/UnrealToolkit/issues/12)): `default_map`,
+  `read_session` and `merged_log` on files in a temp project.
+- [ ] **N25. Tests for `uetk/bridge.py`** ([#13](https://github.com/zeagleee/UnrealToolkit/issues/13)): `Bridge.state`
+  and `Bridge.call` against a thread playing the editor: responses, progress, timeouts and cancelling.
+- [ ] **N26. macOS and Python 3.14 in CI** ([#14](https://github.com/zeagleee/UnrealToolkit/issues/14)).
+- [ ] **N30. Tests for `scripts/new_from_template.py`** ([#18](https://github.com/zeagleee/UnrealToolkit/issues/18)):
+  its work moved into functions behind a `main(argv)`, then tested on a fake template.
 
 ### Toolkit
 - [x] **N12. Warn about an out-of-date plugin.** Done 2026-11-24: `plugins.stale_warnings`, printed by `build`, `editor start|restart` and `py`; tested in `tests/test_plugins.py`. When a project's copy of UETKEditor or UETKVfx differs from the
@@ -247,6 +259,9 @@ imported outside it, except `editor/scenario.py`. Code in `uetk/` and `ue.py` is
   `scripts/` shipped too (the code finds them relative to `uetk/`: `project.EDITOR_PY_DIR`, `plugins.ROOT`). Done
   when, in a clean virtual environment, `pipx install .` works, `ue --help` lists the commands, and `ue info` outside a
   project prints the "No .uproject" error. Add it to the README's quickstart.
+- [ ] **N29. Shell completion** ([#17](https://github.com/zeagleee/UnrealToolkit/issues/17)):
+  `ue.py completion powershell|bash` prints a completion script generated from `build_parser()`, with no new
+  dependency.
 
 ### Docs
 - [x] **N15. Command reference.** Done 2026-11-24: `docs/commands.md`; `scripts/gen_docs.py --check` in CI and `tests/test_docs.py`. `scripts/gen_docs.py` writes `docs/commands.md` from `ue.py`'s argparse (every
@@ -265,6 +280,10 @@ imported outside it, except `editor/scenario.py`. Code in `uetk/` and `ue.py` is
 - [x] **N20. Instructions for agents.** Done 2026-11-24: `docs/agents.md` and `skills/unreal-toolkit/SKILL.md`; `tests/test_docs.py` keeps them the same. `docs/agents.md`: a block projects can paste into their `CLAUDE.md` or
   `AGENTS.md` (where the toolkit is, the commands to reach for first, the rules of thumb agents trip on), and a Claude
   Code skill with the same content in `skills/unreal-toolkit/SKILL.md`. Written from the README.
+- [ ] **N27. README links that work on PyPI** ([#15](https://github.com/zeagleee/UnrealToolkit/issues/15)): absolute
+  links to files in the repo, checked by `tests/test_docs.py`.
+- [ ] **N28. Badges** ([#16](https://github.com/zeagleee/UnrealToolkit/issues/16)) under the README's title: tests,
+  licence, Python versions.
 
 ### Repository
 - [x] **N21. Issue and pull request templates.** Done 2026-11-24: `.github/ISSUE_TEMPLATE/` (bug report, feature request) and `.github/pull_request_template.md`. `.github/ISSUE_TEMPLATE/`: a bug report (engine version and

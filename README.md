@@ -298,3 +298,10 @@ Editors launched by hand (Epic launcher, double-clicked `.uproject`) only get th
 the editor deletes it.
 
 Outputs (build logs, test reports, screenshots, headless logs) go to `<Project>/Saved/UnrealToolkit/`.
+
+## Contributing
+
+Pull requests are welcome, and many tasks don't need Unreal Engine installed: the
+[good first issues](https://github.com/zeagleee/UnrealToolkit/labels/good%20first%20issue) need only Python 3 and git.
+[CONTRIBUTING.md](CONTRIBUTING.md) says how to take one and run the tests. Questions and ideas go to
+[Discussions](https://github.com/zeagleee/UnrealToolkit/discussions).
