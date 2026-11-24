@@ -44,11 +44,12 @@ Before a pull request that touches the engine side:
 1. Make a project from a stock engine template (`scripts/new_from_template.py`), then `ue.py plugins install` and
    `ue.py build`.
 2. Exercise the change in a running editor and headless, on every supported engine version you can (5.6, 5.7, 5.8). A
-   C++ change must build on all of them; the engine's API differs between them (the README notes where).
+   C++ change must build on all of them; the engine's API differs between them (the feature pages in `docs/` note
+   where).
 3. Look at what you made: `ue.py render asset ...` or `ue.py mat preview ...` writes a PNG.
 
 ## Documentation
 
-Each feature's README section ends with what it was checked on (versions, date, what was tried) and "What tripped up
+Each feature's page in `docs/` (linked from the README's "Guides") ends with what it was checked on (versions, date, what was tried) and "What tripped up
 the first version": the engine behaviour that cost time, so the next person doesn't pay it again. Keep both current.
 General Unreal knowledge that isn't about the toolkit goes in [docs/unreal-notes.md](docs/unreal-notes.md).

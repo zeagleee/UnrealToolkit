@@ -45,5 +45,17 @@ class GeneratedDocsTest(unittest.TestCase):
                                  f"docs/{filename} is out of date: run `python scripts/gen_docs.py`")
 
 
+class LinksTest(unittest.TestCase):
+    def test_relative_links_point_at_files(self):
+        pages = [ROOT / "README.md", ROOT / "CONTRIBUTING.md", ROOT / "TODO.md", *sorted((ROOT / "docs").glob("*.md"))]
+        for page in pages:
+            text = page.read_text(encoding="utf-8")
+            for target in re.findall(r"\]\(([^)#\s]+)(?:#[^)]*)?\)", text):
+                if "://" in target or target.startswith("mailto:"):
+                    continue
+                with self.subTest(page=page.name, link=target):
+                    self.assertTrue((page.parent / target).exists(), f"{page.name} links to missing {target}")
+
+
 if __name__ == "__main__":
     unittest.main()

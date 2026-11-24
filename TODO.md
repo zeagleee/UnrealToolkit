@@ -22,7 +22,7 @@ N2 (the test setup and CI), then any other task in section 4.
 ## 1. Jobs every project does by hand
 
 ### [x] Materials
-Done 2026-11-24: `ue.py mat` / `editor/mat.py` (README, "Materials"), checked on 5.6, 5.7 and 5.8. Still open: previews
+Done 2026-11-24: `ue.py mat` / `editor/mat.py` ([docs/materials.md](docs/materials.md)), checked on 5.6, 5.7 and 5.8. Still open: previews
 of decal, UI and light-function materials (`render asset` refuses those domains for now).
 
 Nearly every project builds materials, and doing it through `MaterialEditingLibrary` is long and error-prone.
@@ -39,7 +39,7 @@ Nearly every project builds materials, and doing it through `MaterialEditingLibr
   translucent material are all built from specs, compile, and render correctly.
 
 ### [x] Enhanced Input assets
-Done 2026-11-24: `ue.py input` / `editor/inputs.py`, `bpedit` `input_action` (README, "Enhanced Input"), checked on 5.6,
+Done 2026-11-24: `ue.py input` / `editor/inputs.py`, `bpedit` `input_action` ([docs/input.md](docs/input.md)), checked on 5.6,
 5.7 and 5.8. Still open: per-profile mapping overrides (5.7+), and rebinding keys at runtime through Enhanced Input's
 user settings.
 
@@ -71,7 +71,7 @@ Still open: import options for glTF files (the engine's defaults are used).
   version, and reimports after the files change.
 
 ### [x] Menus and HUD in a running game (UMG)
-Done 2026-11-24: `ue.py ui` / `editor/ui.py`, `bpedit.bound_event` (README, "Menus and HUD"), with Widget Blueprints
+Done 2026-11-24: `ue.py ui` / `editor/ui.py`, `bpedit.bound_event` ([docs/ui.md](docs/ui.md)), with Widget Blueprints
 built from a spec. Checked in PIE on 5.6, 5.7 and 5.8, and in a `ue.py net` client on 5.8. Still open: widget
 rectangles (empty geometry in every run here) and ListView/TileView entries.
 
@@ -256,7 +256,7 @@ imported outside it, except `editor/scenario.py`. Code in `uetk/` and `ue.py` is
 - [ ] **N17 to N19. Split the README** (848 lines) into `docs/`. The README keeps the overview, quickstart, security,
   the commands table, the rules of thumb and the layout, and links to each page. Move the text as it is, and fix the
   links that pointed within the README ("below, ..."). One pull request each:
-  - [ ] N17: "Materials", "Enhanced Input", "Menus and HUD" to `docs/materials.md`, `docs/input.md`, `docs/ui.md`.
+  - [x] N17: "Materials", "Enhanced Input", "Menus and HUD" to `docs/materials.md`, `docs/input.md`, `docs/ui.md`.
   - [ ] N18: "Spawning into the running game", "Importing", "Validating the project" to `docs/spawning.md`,
     `docs/importing.md`, `docs/validation.md`.
   - [ ] N19: "VFX", "Multiplayer sessions", "Performance runs", "Editing Blueprints", "Reviewing Blueprints" and
