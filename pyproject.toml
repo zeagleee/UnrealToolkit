@@ -1,0 +1,45 @@
+[build-system]
+requires = ["setuptools>=64"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "unreal-toolkit"
+dynamic = ["version"]
+description = "Command-line control of Unreal Engine for AI coding agents and scripts"
+readme = "README.md"
+license = { file = "LICENSE" }
+requires-python = ">=3.10"
+dependencies = []
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Operating System :: Microsoft :: Windows",
+    "Topic :: Games/Entertainment",
+    "Topic :: Software Development :: Build Tools",
+]
+
+[project.urls]
+Homepage = "https://github.com/zeagleee/UnrealToolkit"
+Changelog = "https://github.com/zeagleee/UnrealToolkit/blob/main/CHANGELOG.md"
+
+[project.scripts]
+ue = "ue:main"
+
+[tool.setuptools]
+py-modules = ["ue"]
+# editor/, plugin/ and scripts/ ship inside the package as uetk/_editor, uetk/_plugin and uetk/_scripts;
+# uetk.project.toolkit_path() finds them there (and beside uetk/ in a clone).
+packages = ["uetk", "uetk._editor", "uetk._plugin", "uetk._scripts"]
+include-package-data = false
+
+[tool.setuptools.package-dir]
+"uetk._editor" = "editor"
+"uetk._plugin" = "plugin"
+"uetk._scripts" = "scripts"
+
+[tool.setuptools.package-data]
+"uetk._editor" = ["*.py"]
+"uetk._plugin" = ["**/*.uplugin", "**/*.cs", "**/*.h", "**/*.cpp"]
+"uetk._scripts" = ["*.py"]
+
+[tool.setuptools.dynamic]
+version = { attr = "uetk.__version__" }

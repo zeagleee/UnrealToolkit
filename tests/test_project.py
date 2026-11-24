@@ -137,5 +137,12 @@ class ProjectTest(unittest.TestCase):
             p.editor_target
 
 
+class ToolkitPathTest(unittest.TestCase):
+    def test_clone_layout(self):
+        self.assertEqual(project.EDITOR_PY_DIR, support.ROOT / "editor")
+        self.assertTrue((project.EDITOR_PY_DIR / "agent_bridge.py").is_file())
+        self.assertEqual(project.toolkit_path("plugin"), support.ROOT / "plugin")
+
+
 if __name__ == "__main__":
     unittest.main()

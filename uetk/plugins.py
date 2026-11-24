@@ -5,9 +5,10 @@ Each plugin's source lives in the toolkit (plugin/<Name>). `install` copies it i
 later runs.
 """
 import shutil
-from pathlib import Path
 
-ROOT = Path(__file__).resolve().parent.parent / "plugin"
+from .project import toolkit_path
+
+ROOT = toolkit_path("plugin")
 PLUGINS = ("UETKEditor", "UETKVfx")              # install order
 DEPENDS = {"UETKVfx": ("UETKEditor",)}
 PURPOSE = {

@@ -31,7 +31,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from uetk import __version__, build, editor, logs, procs, state  # noqa: E402
 from uetk.bridge import Bridge, install, is_installed, run_headless, uninstall  # noqa: E402
-from uetk.project import Project, ToolkitError  # noqa: E402
+from uetk.project import EDITOR_PY_DIR, Project, ToolkitError  # noqa: E402
 
 
 def _print_response(resp, log_mode):
@@ -120,7 +120,7 @@ def _warn_stale_plugins(p):
 
 def cmd_build(p, args):
     _warn_stale_plugins(p)
-    target = {"editor": p.editor_target, "game": p.game_target}.get(args.target, args.target)
+    target ={"editor": p.editor_target, "game": p.game_target}.get(args.target, args.target)
     restarted_level = None
     keep_no_throttle = state.throttle_claimed(p)
     if target == p.editor_target and procs.editor_pids(p):
@@ -426,7 +426,7 @@ def cmd_vfx(p, args):
     if args.action == "status":
         return _plugin_status(p)
     if args.action == "presets":
-        sys.path.insert(0, str(Path(__file__).resolve().parent / "editor"))
+        sys.path.insert(0, str(EDITOR_PY_DIR))
         import vfx_presets  # pure Python: no editor needed
         for name, info in vfx_presets.catalog().items():
             print(f"{name:12} {info['description']}")

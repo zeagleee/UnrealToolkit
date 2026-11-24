@@ -241,7 +241,7 @@ imported outside it, except `editor/scenario.py`. Code in `uetk/` and `ue.py` is
   project folder.
 - [x] **N13. Version number.** Done 2026-11-24: `uetk.__version__`, `ue.py --version`; `tests/test_ue_cli.py` checks it against `CHANGELOG.md`. `__version__` in `uetk/__init__.py`, `ue.py --version` prints it, and a test checks it
   against the newest version heading in `CHANGELOG.md`.
-- [ ] **N14. Installable package.** A `pyproject.toml` (setuptools, no runtime dependencies) so that
+- [x] **N14. Installable package.** Done 2026-11-24: `pyproject.toml`: `editor/`, `plugin/` and `scripts/` ship as `uetk/_editor`, `_plugin`, `_scripts` (`project.toolkit_path` finds either layout). Checked with `pip install .` in a clean virtual environment (what pipx does): `ue --help`, `ue --version`, and `ue info` outside a project. A `pyproject.toml` (setuptools, no runtime dependencies) so that
   `pipx install git+https://github.com/zeagleee/UnrealToolkit` gives a `ue` command, with `editor/`, `plugin/` and
   `scripts/` shipped too (the code finds them relative to `uetk/`: `project.EDITOR_PY_DIR`, `plugins.ROOT`). Done
   when, in a clean virtual environment, `pipx install .` works, `ue --help` lists the commands, and `ue info` outside a

@@ -10,7 +10,9 @@ edges. MIT licensed.
 
 ## Quickstart
 
-1. Clone this repo anywhere (say `C:/Tools/UnrealToolkit`). Nothing to install besides Python 3.
+1. Clone this repo anywhere (say `C:/Tools/UnrealToolkit`). Nothing to install besides Python 3 (3.10 or newer).
+   Or install it as a `ue` command: `pipx install git+https://github.com/zeagleee/UnrealToolkit`, then use `ue info`
+   and so on wherever this page says `ue.py`.
 2. From a folder that holds a `.uproject` (or pass `--project <path>` from anywhere):
    ```
    python C:/Tools/UnrealToolkit/ue.py info                  # the project, its engine, editor and bridge state
@@ -832,6 +834,7 @@ cost and scalability, networking, online sessions, project setup, packaging, imp
 | `uetk/net.py` | system Python | `ue.py net`: game processes with their own bridges, session state, merged logs, `NetSession` for test scripts |
 | `uetk/plugins.py` | system Python | `ue.py plugins install/status`: copies the toolkit's plugins into a project; warns when a project's copy is out of date |
 | `tests/` | system Python | the engine-free tests: `python -m unittest discover -s tests` |
+| `pyproject.toml` | | packaging: `pipx install` gives a `ue` command |
 
 ## How the bridge works
 

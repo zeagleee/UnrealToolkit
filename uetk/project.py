@@ -6,8 +6,18 @@ import sys
 from functools import cached_property
 from pathlib import Path
 
-TOOLKIT_DIR = Path(__file__).resolve().parent.parent
-EDITOR_PY_DIR = TOOLKIT_DIR / "editor"
+PACKAGE_DIR = Path(__file__).resolve().parent
+TOOLKIT_DIR = PACKAGE_DIR.parent
+
+
+def toolkit_path(name):
+    """A folder the toolkit ships beside uetk/ (editor, plugin, scripts). In a clone it is <toolkit>/<name>; in an
+    installed package (pyproject.toml) it is uetk/_<name>."""
+    installed = PACKAGE_DIR / f"_{name}"
+    return installed if installed.is_dir() else TOOLKIT_DIR / name
+
+
+EDITOR_PY_DIR = toolkit_path("editor")
 
 
 class ToolkitError(Exception):
