@@ -1,0 +1,33 @@
+name: Feature request
+description: Something the toolkit should be able to do
+labels: [enhancement]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        TODO.md lists what's planned. If your idea is already there, say so and add what you need from it.
+        To take one of its tasks (N1, N2...), open a draft pull request named after it instead.
+  - type: textarea
+    id: job
+    attributes:
+      label: The job
+      description: What are you (or your agent) trying to do in Unreal, and what do you do by hand today?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: What it could look like
+      description: >
+        A command or helper call, a spec, and what it prints. New features usually take a spec in, make or update
+        an asset, and have a `describe` that reads any asset of that kind back (see CONTRIBUTING.md).
+  - type: input
+    id: engine
+    attributes:
+      label: Engine versions you need it on
+      placeholder: "5.6, 5.7, 5.8"
+  - type: textarea
+    id: notes
+    attributes:
+      label: Anything else
+      description: Engine APIs you know of, what you tried, links.

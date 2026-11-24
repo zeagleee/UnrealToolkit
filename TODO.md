@@ -267,7 +267,7 @@ imported outside it, except `editor/scenario.py`. Code in `uetk/` and `ue.py` is
   Code skill with the same content in `skills/unreal-toolkit/SKILL.md`. Written from the README.
 
 ### Repository
-- [ ] **N21. Issue and pull request templates.** `.github/ISSUE_TEMPLATE/`: a bug report (engine version and
+- [x] **N21. Issue and pull request templates.** Done 2026-11-24: `.github/ISSUE_TEMPLATE/` (bug report, feature request) and `.github/pull_request_template.md`. `.github/ISSUE_TEMPLATE/`: a bug report (engine version and
   `ue.py info` output, the command, what came back, the log excerpt `CONTRIBUTING.md` asks for) and a feature request.
   `.github/pull_request_template.md` with boxes for "checked on 5.6 / 5.7 / 5.8" and "windowed / headless".
 - [ ] **N22. Release 0.2.0,** once the maintainer agrees: `CHANGELOG.md`'s "Unreleased" becomes "0.2.0 (date)", tag
