@@ -2,7 +2,7 @@
 import json
 import os
 import re
-import winreg
+import sys
 from functools import cached_property
 from pathlib import Path
 
@@ -33,6 +33,9 @@ def _find_uproject(explicit=None):
 
 def _engine_from_registry(association):
     # Launcher installs register under HKLM; source builds (GUID associations) under HKCU\...\Builds.
+    if sys.platform != "win32":
+        return None
+    import winreg
     try:
         with winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, rf"SOFTWARE\EpicGames\Unreal Engine\{association}") as key:
             return Path(winreg.QueryValueEx(key, "InstalledDirectory")[0])

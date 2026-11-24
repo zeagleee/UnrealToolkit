@@ -2,43 +2,47 @@
 import ctypes
 import struct
 import zlib
-from ctypes import wintypes
 
 from . import procs  # noqa: F401  (sets DPI awareness before any capture)
-
-_u32 = ctypes.WinDLL("user32", use_last_error=True)
-_g32 = ctypes.WinDLL("gdi32", use_last_error=True)
-
-for _fn, _args in {
-    "GetWindowDC": [wintypes.HWND], "ReleaseDC": [wintypes.HWND, wintypes.HDC],
-    "PrintWindow": [wintypes.HWND, wintypes.HDC, wintypes.UINT], "GetWindowRect": [wintypes.HWND, ctypes.POINTER(wintypes.RECT)],
-}.items():
-    getattr(_u32, _fn).argtypes = _args
-_u32.GetWindowDC.restype = wintypes.HDC
-for _fn, _args in {
-    "CreateCompatibleDC": [wintypes.HDC], "CreateCompatibleBitmap": [wintypes.HDC, ctypes.c_int, ctypes.c_int],
-    "SelectObject": [wintypes.HDC, wintypes.HGDIOBJ], "DeleteObject": [wintypes.HGDIOBJ], "DeleteDC": [wintypes.HDC],
-    "SetStretchBltMode": [wintypes.HDC, ctypes.c_int],
-    "SetBrushOrgEx": [wintypes.HDC, ctypes.c_int, ctypes.c_int, ctypes.c_void_p],
-    "StretchBlt": [wintypes.HDC, ctypes.c_int, ctypes.c_int, ctypes.c_int, ctypes.c_int,
-                   wintypes.HDC, ctypes.c_int, ctypes.c_int, ctypes.c_int, ctypes.c_int, wintypes.DWORD],
-    "GetDIBits": [wintypes.HDC, wintypes.HBITMAP, wintypes.UINT, wintypes.UINT, ctypes.c_void_p, ctypes.c_void_p, wintypes.UINT],
-}.items():
-    getattr(_g32, _fn).argtypes = _args
-_g32.CreateCompatibleDC.restype = wintypes.HDC
-_g32.CreateCompatibleBitmap.restype = wintypes.HBITMAP
-_g32.SelectObject.restype = wintypes.HGDIOBJ
 
 PW_RENDERFULLCONTENT = 2
 HALFTONE = 4
 SRCCOPY = 0x00CC0020
 
+if procs.IS_WINDOWS:
+    from ctypes import wintypes
 
-class _BITMAPINFOHEADER(ctypes.Structure):
-    _fields_ = [("biSize", wintypes.DWORD), ("biWidth", wintypes.LONG), ("biHeight", wintypes.LONG),
-                ("biPlanes", wintypes.WORD), ("biBitCount", wintypes.WORD), ("biCompression", wintypes.DWORD),
-                ("biSizeImage", wintypes.DWORD), ("biXPelsPerMeter", wintypes.LONG),
-                ("biYPelsPerMeter", wintypes.LONG), ("biClrUsed", wintypes.DWORD), ("biClrImportant", wintypes.DWORD)]
+    _u32 = ctypes.WinDLL("user32", use_last_error=True)
+    _g32 = ctypes.WinDLL("gdi32", use_last_error=True)
+
+    for _fn, _args in {
+        "GetWindowDC": [wintypes.HWND], "ReleaseDC": [wintypes.HWND, wintypes.HDC],
+        "PrintWindow": [wintypes.HWND, wintypes.HDC, wintypes.UINT],
+        "GetWindowRect": [wintypes.HWND, ctypes.POINTER(wintypes.RECT)],
+    }.items():
+        getattr(_u32, _fn).argtypes = _args
+    _u32.GetWindowDC.restype = wintypes.HDC
+    for _fn, _args in {
+        "CreateCompatibleDC": [wintypes.HDC], "CreateCompatibleBitmap": [wintypes.HDC, ctypes.c_int, ctypes.c_int],
+        "SelectObject": [wintypes.HDC, wintypes.HGDIOBJ], "DeleteObject": [wintypes.HGDIOBJ], "DeleteDC": [wintypes.HDC],
+        "SetStretchBltMode": [wintypes.HDC, ctypes.c_int],
+        "SetBrushOrgEx": [wintypes.HDC, ctypes.c_int, ctypes.c_int, ctypes.c_void_p],
+        "StretchBlt": [wintypes.HDC, ctypes.c_int, ctypes.c_int, ctypes.c_int, ctypes.c_int,
+                       wintypes.HDC, ctypes.c_int, ctypes.c_int, ctypes.c_int, ctypes.c_int, wintypes.DWORD],
+        "GetDIBits": [wintypes.HDC, wintypes.HBITMAP, wintypes.UINT, wintypes.UINT, ctypes.c_void_p, ctypes.c_void_p,
+                      wintypes.UINT],
+    }.items():
+        getattr(_g32, _fn).argtypes = _args
+    _g32.CreateCompatibleDC.restype = wintypes.HDC
+    _g32.CreateCompatibleBitmap.restype = wintypes.HBITMAP
+    _g32.SelectObject.restype = wintypes.HGDIOBJ
+
+    class _BITMAPINFOHEADER(ctypes.Structure):
+        _fields_ = [("biSize", wintypes.DWORD), ("biWidth", wintypes.LONG), ("biHeight", wintypes.LONG),
+                    ("biPlanes", wintypes.WORD), ("biBitCount", wintypes.WORD), ("biCompression", wintypes.DWORD),
+                    ("biSizeImage", wintypes.DWORD), ("biXPelsPerMeter", wintypes.LONG),
+                    ("biYPelsPerMeter", wintypes.LONG), ("biClrUsed", wintypes.DWORD),
+                    ("biClrImportant", wintypes.DWORD)]
 
 
 def _write_png(path, width, height, rgb):
@@ -55,6 +59,7 @@ def _write_png(path, width, height, rgb):
 
 def capture(hwnd, out_path, max_width=1600):
     """Save the window as PNG, downscaled to max_width (0 = native). Returns (width, height)."""
+    procs._windows_only("Window screenshots")
     rect = wintypes.RECT()
     _u32.GetWindowRect(hwnd, ctypes.byref(rect))
     width, height = rect.right - rect.left, rect.bottom - rect.top

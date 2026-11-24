@@ -1,12 +1,10 @@
 """Client for the in-editor agent bridge (editor/agent_bridge.py) and for headless Python runs."""
-import ctypes
 import json
 import os
 import subprocess
 import sys
 import time
 import uuid
-import winreg
 
 from . import logs, procs
 from .project import EDITOR_PY_DIR, ToolkitError
@@ -180,6 +178,9 @@ def with_bridge_path(value):
 
 
 def _user_env():
+    if sys.platform != "win32":
+        return None
+    import winreg
     try:
         with winreg.OpenKey(winreg.HKEY_CURRENT_USER, "Environment") as key:
             return winreg.QueryValueEx(key, "UE_PYTHONPATH")[0]
@@ -188,6 +189,11 @@ def _user_env():
 
 
 def _set_user_env(value):
+    if sys.platform != "win32":
+        raise ToolkitError("`ue.py bridge install` is Windows-only for now. Elsewhere, add "
+                           f"{EDITOR_PY_DIR} to UE_PYTHONPATH in your shell profile.")
+    import ctypes
+    import winreg
     with winreg.OpenKey(winreg.HKEY_CURRENT_USER, "Environment", 0, winreg.KEY_SET_VALUE) as key:
         if value:
             winreg.SetValueEx(key, "UE_PYTHONPATH", 0, winreg.REG_EXPAND_SZ, value)

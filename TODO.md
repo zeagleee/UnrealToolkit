@@ -204,10 +204,10 @@ imported outside it, except `editor/scenario.py`. Code in `uetk/` and `ue.py` is
 - [x] **N1. Test setup.** Done 2026-11-24: `tests/` with `tests/support.py`; "Running the tests" in `CONTRIBUTING.md`. A `tests/` folder run by `python -m unittest discover -s tests`, a first test
   (`uetk.plugins.with_dependencies` is an easy one), and a "Running the tests" paragraph in `CONTRIBUTING.md` in place
   of "There's no automated test suite yet". Done when the command passes in a fresh clone.
-- [ ] **N2. GitHub Actions.** `.github/workflows/tests.yml`: on every push and pull request, on `windows-latest` with
+- [x] **N2. GitHub Actions.** Done 2026-11-24: `.github/workflows/tests.yml`: Windows and Linux, Python 3.10 and 3.13. `.github/workflows/tests.yml`: on every push and pull request, on `windows-latest` with
   Python 3.10 and 3.13, run the tests and `python -m compileall -q ue.py uetk editor scripts` (that catches syntax
   errors in the editor-side code the tests can't import). Done when a pull request shows the check. After N1.
-- [ ] **N3. Importable off Windows.** `uetk/project.py`, `uetk/bridge.py`, `uetk/procs.py` and `uetk/winshot.py`
+- [x] **N3. Importable off Windows.** Done 2026-11-24: Win32 imports moved behind `sys.platform == "win32"` in `project.py`, `bridge.py`, `procs.py` and `winshot.py`; the Windows-only calls raise a clear `ToolkitError` elsewhere. `ubuntu-latest` is in the CI matrix. `uetk/project.py`, `uetk/bridge.py`, `uetk/procs.py` and `uetk/winshot.py`
   import `winreg` and `ctypes.windll` at the top, so `import ue` fails on Linux and macOS. Import them inside the
   functions that use them, or behind `sys.platform == "win32"`, and add `ubuntu-latest` to the CI matrix. Done when
   the tests pass on Linux and nothing changes on Windows. After N2.

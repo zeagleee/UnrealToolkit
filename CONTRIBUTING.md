@@ -32,7 +32,9 @@ python -m compileall -q ue.py uetk editor scripts     # syntax of the editor-sid
 ```
 
 Tests use the standard library's `unittest` and write only to temporary folders. Code in `editor/` imports `unreal`,
-so the tests can't import it, except `editor/scenario.py`, which `tests/support.py` loads by path.
+so the tests can't import it, except `editor/scenario.py`, which `tests/support.py` loads by path. GitHub Actions
+runs all of this on Windows and Linux with Python 3.10 and 3.13 on every push and pull request
+(`.github/workflows/tests.yml`).
 
 ## Checking a change in the engine
 
