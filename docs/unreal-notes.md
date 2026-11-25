@@ -44,6 +44,16 @@ checked at the time; versions and dates are given where they matter.
 - Show-flag A/B at runtime from Python: `capture.set_editor_property('show_flag_settings',
   [unreal.EngineShowFlagsSetting(show_flag_name='DynamicShadows', enabled=False)])`. Setting `texture_target` to None
   stops a capture rendering.
+- **Tuning a Blueprint class default during PIE doesn't reach new spawns** if the Blueprint's value equalled the C++
+  default when it was last compiled: a Blueprint actor's construction copies only the properties the Blueprint overrides
+  (its compiled custom property list), so a new value on the CDO is ignored until a recompile. Set the live instances
+  instead (both machines' copies). Setting the CDO also propagates to level instances and dirties the level: discard it.
+  Seen with a held item's `HeldInView` set on its Blueprint's CDO from Python during PIE (5.8, 2026-11-25).
+- **`HighResShot` sent to a PIE client's world can capture the editor's active viewport (the host) instead,** now and
+  then; take two shots a second apart and check whose view each is.
+- **A full-size shot of one PIE player's view:** run `HighResShot 1600x900` on that player's PIE world
+  (`SystemLibrary.execute_console_command(world, ...)`); it lands in `Saved/Screenshots/WindowsEditor/` without the HUD.
+  A window screenshot of the small client window keeps the HUD (prompts, hints) but at its size.
 - **`CaptureScene()` renders only when the main view does**, so with the editor minimized an exported capture is black.
   Window screenshots skip minimized windows too. `ue.py render` captures and reads back in the same call
   (`FlushRenderingCommands()`), so it works minimized.
@@ -108,6 +118,11 @@ checked at the time; versions and dates are given where they matter.
 - **Characters attached to a moving vehicle** still send moves. Unless `bIgnoreClientMovementErrorChecksAndCorrection` is
   on while attached, the server "corrects" them by the gap between its copy of the vehicle and the client's. That moves
   the capsule off its attach point, and the camera wanders.
+- **A seated player's look on other clients:** a character attached to a seat with `bUseControllerRotationYaw` still
+  turns its actor with the view, and the attachment's relative rotation replicates, so the look yaw arrives. The pitch
+  may not: `APawn::GetBaseAimRotation` uses the replicated view pitch only when the actor's own pitch is exactly zero,
+  and a vehicle's tilt (−0.19° parked, UE 5.8) gives the attached actor some. Read the pitch from
+  `FRotator::DecompressAxisFromShort(GetRemoteViewPitch())` yourself on machines without a controller.
 - **Seat changes:** replicate any data the client needs for a seat change (an exit spot) in the same actor as the seat
   property, not in an RPC. Properties changed in the same frame arrive together, and their OnReps run after all of them
   are applied; an RPC can arrive later.
@@ -121,6 +136,16 @@ checked at the time; versions and dates are given where they matter.
   4.1). Send the simulating machine's filtered reading in the samples instead; it arrives about a one-way trip late.
 - **`AWheeledVehiclePawn` is a Pawn.** A trace that skips pawns (so as not to land on a player) skips the vehicle too,
   and a dropped item fell through its floor. Skip `ACharacter` instead.
+
+### Cameras on a listen server
+
+- **A listen server runs a `PlayerCameraManager::UpdateCamera` for every remote player too** (`UWorld::Tick` calls
+  `UpdateCameraManager` on every player controller). Its view comes from that client's `ServerUpdateCamera` reports: an
+  `FVector_NetQuantize` (whole centimetres), sent at the network rate, a few frames late. Anything an `UpdateCamera`
+  override does to its view target (placing first-person hands, say) must check `PCOwner->IsLocalController()`, or the
+  host moves remote players' parts from that stale, stepped view. Cash Run (UE 5.8, 2026-11-26): a seated passenger's
+  floating gloves, seen from the host, swung 0–50 cm along a van at 30 km/h; walking players' stepped at the network
+  rate. Tell-tale sign: the "view" has whole-number coordinates that change every other frame.
 
 ### Replicating a growing list (`FFastArraySerializer`)
 
@@ -152,6 +177,21 @@ checked at the time; versions and dates are given where they matter.
 - **To judge what a first-person hand hides without rendering:** project its bones
   (`PoseableMeshComponent.get_bone_location_by_name`, world space) into the camera manager's view, give each segment a
   radius, and rasterize against the target's screen quad.
+
+### Timing a player's action against something moving (Cash Run's press, 2026-11-24)
+
+- **Let the player's machine decide the moment** and send what it saw (the moving thing's progress); the server checks it
+  against its own copy with a window. Under `NetEmulation.PktEmulationProfile Bad` (5 % loss each way) one reliable RPC
+  arrived **1.9 s** after it was sent (a resend), and a window sized from the player's ping refused it. Size the window
+  by a fixed time (2 s) instead, and keep the thing open long enough after its last target for a late claim to land.
+- **A minimum gap between a client's events refuses real ones** that a resend bunches together. Use a token bucket
+  with a burst.
+- **Share a moving thing as a line, not a stream:** the server keeps `Progress + Rate × (t − Time)` and re-sends it only
+  when the rate moves a step (or it starts, stops, or gets old); everyone else evaluates it at their estimate of the
+  server clock (`AGameStateBase::GetServerWorldTimeSeconds()` plus half the ping). Under the Bad profile that estimate
+  ran about 0.1 s ahead of the server.
+- **Easing toward a moving target trails it** by rate × the ease's time constant (0.08 rows at 0.8 rows/s with 0.1 s).
+  Advance the shown value at the line's own rate first, then ease out only the remaining error.
 
 ### Online sessions, travel and settings
 
@@ -201,6 +241,10 @@ checked at the time; versions and dates are given where they matter.
   ignores it and never fires again. Poll `GetOverlappingActors` (10 Hz is plenty) for player triggers.
 - **`FOverlapResult`** needs `#include "Engine/OverlapResult.h"`; `WorldCollision.h` only forward-declares it.
 - The templates' `/Game/LevelPrototyping/Meshes/SM_Cube` pivots on a corner; `/Engine/BasicShapes/Cube` is centred.
+- **Unreal's axes are left-handed, its cross product isn't:** `FVector::CrossProduct` is the usual algebra, so a frame
+  described as (normal, up, in) from a right-handed tool can come out mirrored in Unreal, one axis reversed. Build
+  frames from two trusted vectors (`FRotationMatrix::MakeFromXZ`) and derive the third, rather than trusting all
+  three labels. Seen with a Blender hand pose's grip frame, whose "up" pointed down (2026-11-25).
 - **Asset-registry class paths moved in UE 5.7:** `UserDefinedStruct` is `/Script/CoreUObject.UserDefinedStruct`, not
   `/Script/Engine`. An `ARFilter` on the old path silently finds nothing. `UserDefinedEnum` is still in
   `/Script/Engine`.
@@ -224,3 +268,16 @@ checked at the time; versions and dates are given where they matter.
 - **Images written through `image.pixels`** store the values as given. Linear colours written into an sRGB-tagged PNG
   come out too dark and too saturated in Unreal. Encode to sRGB before writing, or import that texture with `srgb` off.
 - Interchange warns about FBX meshes saved without smoothing groups: turn on the exporter's smoothing groups option.
+- **A pivot survives only as the FBX origin.** Unreal bakes each node's transform into the vertices, so an object
+  exported standing at its pivot (Blender origin set to a hinge, object placed there) arrives with its vertices in
+  world position and its pivot at (0,0,0). Move the object to the origin before exporting. Blender's own FBX round
+  trip doesn't catch it, because Blender keeps the node transform; check the bounds in Unreal (5.8, 2026-11-25).
+- **A rigged character from Blender imports with a ×100 scale on its root bone** and every other bone in metres (the
+  FBX unit conversion; the reference pose and the animations alike). Code that writes bone transforms (a poseable mesh)
+  must multiply the root's scale, never set it: setting it to 1 shrank the body a hundredfold (2026-11-26).
+- **A material on a skeletal or spline mesh needs its usage flag** (`bUsedWithSkeletalMesh`, `bUsedWithSplineMeshes`;
+  `MaterialEditingLibrary.set_material_usage`), or the mesh draws the default grey material in the game. Engine
+  content (`/Engine/BasicShapes/BasicShapeMaterial`) can't be flagged: make your own flat-colour material (2026-11-26).
+- **UCX_ collision needs `auto_generate_collision` on** (`FbxStaticMeshImportData`). Through Interchange (5.8), False
+  turns collision import off altogether, UCX_ boxes included (`InterchangeFbxAssetImportDataConverter.cpp`, which
+  maps it to the mesh pipeline's `bCollision`). With True, meshes that carry UCX_ get those; the rest get an 18-DOP.
