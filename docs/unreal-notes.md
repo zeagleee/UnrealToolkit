@@ -143,8 +143,8 @@ checked at the time; versions and dates are given where they matter.
   `UpdateCameraManager` on every player controller). Its view comes from that client's `ServerUpdateCamera` reports: an
   `FVector_NetQuantize` (whole centimetres), sent at the network rate, a few frames late. Anything an `UpdateCamera`
   override does to its view target (placing first-person hands, say) must check `PCOwner->IsLocalController()`, or the
-  host moves remote players' parts from that stale, stepped view. Cash Run (UE 5.8, 2026-11-26): a seated passenger's
-  floating gloves, seen from the host, swung 0–50 cm along a van at 30 km/h; walking players' stepped at the network
+  host moves remote players' parts from that stale, stepped view. Seen in a co-op vehicle game (UE 5.8, 2026-11-26): a seated
+  passenger's first-person hands, seen from the host, swung 0–50 cm along the vehicle at 30 km/h; walking players' stepped at the network
   rate. Tell-tale sign: the "view" has whole-number coordinates that change every other frame.
 
 ### Replicating a growing list (`FFastArraySerializer`)
@@ -178,7 +178,7 @@ checked at the time; versions and dates are given where they matter.
   (`PoseableMeshComponent.get_bone_location_by_name`, world space) into the camera manager's view, give each segment a
   radius, and rasterize against the target's screen quad.
 
-### Timing a player's action against something moving (Cash Run's press, 2026-11-24)
+### Timing a player's action against something moving (2026-11-24)
 
 - **Let the player's machine decide the moment** and send what it saw (the moving thing's progress); the server checks it
   against its own copy with a window. Under `NetEmulation.PktEmulationProfile Bad` (5 % loss each way) one reliable RPC
