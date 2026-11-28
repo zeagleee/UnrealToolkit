@@ -15,7 +15,7 @@ import tempfile
 
 import unreal
 
-EAL = unreal.EditorAssetLibrary
+EAL = getattr(unreal, "EditorAssetLibrary", None)  # editor only: a -game process has no EditorScriptingUtilities
 # [ \t]*, not \s*: \s* crossed the line break, so a property with no description swallowed the next property's line.
 _PROP_DOC_RE = re.compile(r"^- ``(\w+)`` \((.*?)\):[ \t]*\[(Read-Write|Read-Only)\][ \t]*(.*)$", re.M)
 _BLUEPRINT_CLASSES = ("Blueprint", "WidgetBlueprint", "AnimBlueprint", "EditorUtilityBlueprint",
