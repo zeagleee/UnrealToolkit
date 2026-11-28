@@ -57,6 +57,9 @@ checked at the time; versions and dates are given where they matter.
 - **`CaptureScene()` renders only when the main view does**, so with the editor minimized an exported capture is black.
   Window screenshots skip minimized windows too. `ue.py render` captures and reads back in the same call
   (`FlushRenderingCommands()`), so it works minimized.
+- **A studio capture far below the level comes out fog-coloured:** exponential height fog gets denser the lower you
+  go, so objects at Z −90000 rendered as flat fog. Shoot such captures high above the level (Z +60000) and turn the
+  `Fog` show flags off (5.6, 2026-11).
 
 ## Rendering cost and look (UE 5.8)
 
@@ -103,6 +106,52 @@ checked at the time; versions and dates are given where they matter.
 - **An outline-only "ghost"** (where something will go): a mesh with `SetRenderInMainPass(false)` and
   `SetRenderInDepthPass(false)` still renders into custom depth when highlighted, so a post-process outline draws its
   shape with nothing else visible.
+
+## Rendering behaviour (UE 5.6)
+
+Seen on 5.6 between 2026-10 and 2026-11 unless noted.
+
+- **Virtual shadow maps don't follow a displacement or WPO change driven by a material parameter collection.** Cached
+  VSM pages keep the old shape: a displaced landscape shadowed itself in big triangles near the view, which looked like
+  a tessellation bug. Set the component's Shadow Cache Invalidation Behavior to Always while its shape can change, or
+  mark its render state dirty once after a change. `r.Shadow.Virtual.Cache 0` tells whether this is the cause.
+- **A translucent material whose texture scrolls writes no velocity,** so TSR smeared its moving dots into streaks
+  (responsive AA didn't help). Put it in the After Motion Blur translucency pass, which is composited after TSR.
+  Compare with `r.AntiAliasingMethod 0` to tell the anti-aliasing from the material.
+- **Small fast particles in shots from a background editor:** at about 3 fps a snowflake moves so far between frames
+  that TSR wipes it out. Take such shots under `slomo 0.05`, or start the editor with `--no-throttle`.
+- **Faint ghosts on a widget's render target just after its text changes,** with the camera still, are TSR history,
+  not the widget (they go with `r.AntiAliasingMethod 0`).
+- **Translucent materials don't write custom depth** by default, so a stencil outline misses them. Turn on Allow
+  Custom Depth Writes in the material.
+- **An outline added as a post-process blendable on the player's camera** shows only through that camera. Switch the
+  view target to another camera (a fixed close-up view of a workstation) and every outline is gone: add the blendable
+  to each gameplay camera.
+- **With manual exposure in an unbound post-process volume, only the exposure bias counts.** A camera that overrides
+  min and max brightness changes nothing; read the level's bias and offset it.
+- **One-sided thin-shell meshes** vanish when seen from inside or through a gap, and a custom-depth outline then draws
+  the edges of whatever is behind them. Give them an inner wall (flipped faces a few millimetres in) and weld the
+  seams when preparing the mesh.
+
+## Materials and textures from Python (UE 5.6)
+
+- **`MaterialEditingLibrary.delete_all_material_expressions` or `delete_material_expression` on a loaded material
+  asserts `!IsRooted()` and crashes the editor,** also when the material is only held by a C++ class default
+  (`ConstructorHelpers`). Patch the existing nodes in place, or delete the `.uasset` with the editor closed and build
+  the material again.
+- **Deleting a material and creating it again at the same path** (`delete_asset` + `create_asset`) clears it from every
+  mesh slot that used it; those meshes draw the default material. Patch the existing material in place.
+- **A sampler type that doesn't match the texture fails the material** (default material or checker grid, and only a
+  log line says so): `SAMPLERTYPE_GRAYSCALE` on a linear `TC_GRAYSCALE` texture, `LINEAR_GRAYSCALE` on a
+  colour-compressed one. Match the sampler to the texture's compression and sRGB flag, and grep the log for
+  `Failed to compile Material` after a material script.
+- **A grayscale texture sample's default output ("") is still RGB:** wired into float2 maths it fails with
+  "Arithmetic between types float3 and float2". Connect the `R` pin.
+- **A bluish RGBA texture can be imported as a normal map** (a moon with a blue halo was): the material fails and
+  draws a grey square. Set `compression_settings` to `TC_DEFAULT` and `srgb` after the import.
+- **Canvas triangles hand vertex colours to a render-target material sRGB-encoded.** `FCanvasUVTri` colours drawn with
+  `K2_DrawMaterialTriangle` are stored with `ToFColor(true)` and the material reads them raw, so 0.2 arrived as about
+  0.48. Pass `FLinearColor(FColor(value × 255))` so the decode undoes the encode.
 
 ## Networking
 
@@ -221,6 +270,52 @@ checked at the time; versions and dates are given where they matter.
   `OnClicked.AddDynamic`, makes rows and steppers without a UFUNCTION each. `ue.py ui click <label>` clicks one (it
   fires the button's OnClicked, as `button.on_clicked.broadcast()` does).
 
+## Editor scripting and PIE (UE 5.6)
+
+- **`unreal.Rotator(a, b, c)` is (roll, pitch, yaw)**, not C++'s (pitch, yaw, roll): a view meant to look 40° down came
+  out rolled 40°. Use keywords: `unreal.Rotator(roll=0, pitch=-40, yaw=10)`.
+- **Structs read with `get_editor_property` are copies.** Editing an element of `asset.get_editor_property("pieces")`
+  changes nothing; copy the list, edit it, and set the whole array back.
+- **`StaticMaterial` has no `material`;** the field is `material_interface`.
+- **A C++ class without `BlueprintType`** is wrapped as its nearest exposed parent (a `UDataAsset` subclass shows up
+  as `DataAsset`, and none of its properties are found), and an enum without it doesn't exist in `unreal` at all.
+  Add `BlueprintType`; `unreal.load_class(None, "/Script/Module.Class")` finds the class.
+- **`isinstance(c, unreal.ChildActorComponent)` can throw;** compare `c.get_class().get_name()` instead.
+- **`EditorAssetLibrary.load_asset` returns None during PIE** ("The Editor is currently in a play mode"). An import
+  earlier in the same script still lands, but nothing after the load runs or saves. Stop PIE before asset scripts.
+- **Setting an inherited component's properties on a child Blueprint from Python wrote them to the parent class,**
+  and broke the other children. Change such values by hand in the child's Details panel, or expose a property on the
+  C++ class.
+- **Python edits to actors in the editor world mark the level dirty,** even on transient actors. Set properties with
+  `PropertyAccessChangeNotifyMode.NEVER`, and still expect to discard the level afterwards.
+- **`/Game/...` paths passed from Git Bash on Windows** become `C:/Program Files/Git/Game/...` (MSYS path
+  conversion), as arguments and in files a Bash loop writes; a batch then silently matches nothing. Prefix the command
+  with `MSYS_NO_PATHCONV=1`, or drive the batch from Python.
+- **A force-killed editor stops at a modal "Restore Packages" dialog on its next start** (frame 0, no remote call is
+  answered). Move `Saved/Autosaves/PackageRestoreData.json` aside before starting it again.
+- **A Live Coding patch lives only in that editor session;** a restarted editor loads the old DLL. Build fully before
+  any restart.
+- **The level editor's shortcuts stay live during PIE:** P toggles the navigation mesh display. Pick debug keys the
+  level editor doesn't use.
+- **Restoring a minimized editor window (`ShowWindow`) during PIE** crashed the D3D12 renderer once. Leave the window
+  state alone.
+
+## Moving assets in bulk (UE 5.6)
+
+- **Moving thousands of assets in one session** ran out of memory on a batch of big textures, then crashed the GPU. A
+  crash mid-batch leaves copies at the new path and some originals already turned into redirectors. Start the editor
+  with `-nullrhi`, move at most about 25 assets per `AssetTools.rename_assets` call, and drop Python references and
+  collect garbage between calls. After a crash, delete the half-written copies and restore the originals from version
+  control.
+- **`rename_assets` on an asset a C++ class default holds** (`ConstructorHelpers`), or on a map in the editor's recent
+  maps, opens an OK/Cancel dialog ("Source code, config INI ... may need Find/Replace"); unattended it answers Cancel
+  and nothing moves. Change the code and ini paths first, rebuild and restart, then move it.
+- **A moved skeletal mesh leaves a full copy behind:** its old package can't be saved as a redirector ("Illegal
+  reference to private object"). Check that nothing references it, then
+  `EditorAssetLibrary.consolidate_assets(new, [old])`, or delete the old file with the editor closed.
+- **Fix Up Redirectors has no Python API.** Load and re-save every package that references a redirector, then delete
+  the redirectors nothing references; Blueprint redirectors may refuse, so delete their files with the editor closed.
+
 ## Project setup and gameplay code
 
 - **New C++ project without the editor UI:** `scripts/new_from_template.py`. The editor's new-project path
@@ -230,7 +325,8 @@ checked at the time; versions and dates are given where they matter.
   without it, and Python can't reach `ULevel`. Call `ULevel::ConvertAllActorsToPackaging(true)` from a small
   BlueprintCallable in your game module (body under `WITH_EDITOR`).
 - **UHT forbids a `UPROPERTY` name in a child class that a parent already has.** Adding `SprintAction` to the First
-  Person template's base character broke its Horror variant, which declares its own.
+  Person template's base character broke its Horror variant, which declares its own. Engine classes count too: a
+  `UPROPERTY` named `Cursor` on a `UUserWidget` clashes with `UWidget::Cursor`.
 - **Changing a `UPROPERTY`'s object type** (e.g. `USceneComponent*` to a subclass) nulls the saved value in Blueprints
   and levels on load ("Serialized Class X for a property of Class Y. Reference will be nulled"), even for a default
   subobject pointer. Rename the property instead, so the old saved value is skipped and the constructor's stands; then
@@ -249,6 +345,39 @@ checked at the time; versions and dates are given where they matter.
   `/Script/Engine`. An `ARFilter` on the old path silently finds nothing. `UserDefinedEnum` is still in
   `/Script/Engine`.
 
+Seen on 5.6 (2026-10 to 2026-11):
+
+- **Loading a skeletal mesh and an animation Blueprint with `ConstructorHelpers` in a component's constructor hung the
+  editor at start-up** (splash screen, frame 0, CPU idle, no log line; twice). Use `TSoftObjectPtr` /
+  `TSoftClassPtr` loaded at BeginPlay, and make sure the cooker sees them (see Packaging).
+- **`HideBoneByName` does nothing on a skeletal mesh that follows a leader pose** (`ShouldUpdateBoneVisibility` is
+  false with a leader). Give that mesh its own anim instance.
+- **A scene component made with `CreateDefaultSubobject` in a native actor whose Blueprint child has its own root**
+  became the actor's root, and everything in the Blueprint moved with it. Create such helper components at BeginPlay
+  with `NewObject` + `RegisterComponent`.
+- **Header-inline code that uses a type the header only forward-declares** compiles until new files regroup the unity
+  build, then fails. Keep such bodies in the `.cpp`.
+- **Explicit (Euler) springs stepped once per frame diverge at low frame rates.** At a background editor's 3 fps a
+  landing spring on the camera went to infinity and NaN, and the renderer asserted (`NumPlanes <= 12`, distance-field
+  shadowing). Sub-step springs at a fixed step (1/120 s, the frame clamped to 0.25 s) and clamp the result.
+- **Characters push light physics items through thin floors** by pressing their weight onto them when they walk over.
+  Set the character movement's `StandingDownwardForceScale` to 0, and give the items `CanCharacterStepUpOn` No and CCD.
+- **A skeletal mesh without a Physics Asset is invisible to traces;** give the actor a collision box, or make a
+  Physics Asset.
+- **Object-type traces for the floor hit trigger volumes;** trace the Visibility channel, or WorldStatic only.
+- **A looping sound started with `PlaySoundAtLocation` can't be stopped;** keep the `UAudioComponent` from
+  `SpawnSoundAtLocation` / `SpawnSoundAttached` and fade it out.
+- **A widget component screen whose border only gets `UBorder::SetBrushColor`** keeps old frames in its render target
+  (ghost lines after a layout change): the default brush draws nothing. Give the border a real fill brush.
+- **Text set on a code-built widget before it is on screen is lost** (its Slate widgets don't exist yet). Call
+  `TakeWidget()` first.
+- **Check a marketplace mesh's collision** (`body_setup.agg_geom`): a broom came with one 39 × 38 × 145 cm box, so it
+  stood upright and weighed 56 kg.
+- **Placing a tilted mesh by its bounding-box corners** leaves it floating (a box's corners reach past round wheels).
+  Use the real vertex positions (`StaticMesh.get_static_mesh_description(0)`).
+- **A normal averaged over a double-sided mesh's faces cancels out** (front and back faces); use the known facing
+  direction.
+
 ## Packaging (UE 5.8)
 
 - **Shipping packages:** BuildCookRun copies the `.pdb` (~200 MB) unless `-nodebuginfo` (`ue.py package --config
@@ -259,6 +388,12 @@ checked at the time; versions and dates are given where they matter.
   lists the materials that were cooked. Soft references in a `UDeveloperSettings` config were cooked.
 - **First-launch quality:** `RunHardwareBenchmark()` + `ApplyHardwareBenchmarkResults()` from `UGameInstance::Init`
   works in Shipping; it can pick Cinematic, so clamp the groups to 3.
+- **On 5.6, assets referenced only from Project Settings or by soft paths in C++ weren't cooked:** soft references in a
+  `UDeveloperSettings` config, so a Shipping build had none of its game sounds (2026-11-09). Unlike the 5.8 note
+  above, so check either way: list the folders under `DirectoriesToAlwaysCook` in `DefaultGame.ini`, and look for the
+  assets in the build's `Manifest_UFSFiles_Win64.txt`.
+- **Shipping ignores a map given on the command line** (`UE_ALLOW_MAP_OVERRIDE_IN_SHIPPING` is off), so it always
+  boots the default map, and only maps that were cooked can be opened later: cook them all, `-map=A+B+C` (5.6).
 
 ## From Blender (FBX)
 
@@ -281,3 +416,8 @@ checked at the time; versions and dates are given where they matter.
 - **UCX_ collision needs `auto_generate_collision` on** (`FbxStaticMeshImportData`). Through Interchange (5.8), False
   turns collision import off altogether, UCX_ boxes included (`InterchangeFbxAssetImportDataConverter.cpp`, which
   maps it to the mesh pipeline's `bCollision`). With True, meshes that carry UCX_ get those; the rest get an 18-DOP.
+- **An FBX whose triangles each have their own three corners** (nothing welded) made 5.6's Interchange log "Bad
+  MeshDescription" and build empty meshes (0 triangles, zero bounds). Weld corners at the same position, keeping
+  normals and UVs per corner, and check `get_num_triangles(0)` after the import.
+- **Blender 5.x has no Collada importer** (`bpy.ops.wm.collada_import` is gone). A flat `.dae` is XML: read the
+  geometry yourself and build the meshes in Python, or convert it elsewhere first.
