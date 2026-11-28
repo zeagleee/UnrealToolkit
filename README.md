@@ -93,7 +93,9 @@ In `ue.py py`, `unreal` and `ueh` (`editor/ueh.py`) are pre-imported; `ueh.help(
   (`spawn`, `actors`, `actor` and `destroy` take `world='game'` for the running game: [Spawning into the running game](docs/spawning.md))
 - PIE: `pie_start`, `pie_stop`, `is_pie`, `pie_world`, `player`, `console`; saving: `dirty`, `save`, `save_object`
 
-Variables persist between `py` calls within one editor session. Edits to `ueh.py`, `agent_bridge.py`, `scenario.py`
+Variables persist between `py` calls within one editor session, in one shared namespace: a quick `sub = ...` in a
+scratch call replaces a function of that name a loaded test script defined, and the script then fails mid-run. Use
+distinctive names in throwaway calls. Edits to `ueh.py`, `agent_bridge.py`, `scenario.py`
 and the other helper modules take effect on the next call (hot reload, no editor restart). A helper module added to
 the toolkit while an editor runs is loaded on its next call.
 

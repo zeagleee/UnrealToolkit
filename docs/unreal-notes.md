@@ -54,6 +54,10 @@ checked at the time; versions and dates are given where they matter.
 - **A full-size shot of one PIE player's view:** run `HighResShot 1600x900` on that player's PIE world
   (`SystemLibrary.execute_console_command(world, ...)`); it lands in `Saved/Screenshots/WindowsEditor/` without the HUD.
   A window screenshot of the small client window keeps the HUD (prompts, hints) but at its size.
+- **`AutomationLibrary.take_high_res_screenshot` called from a slate tick during PIE stalls the game for seconds**
+  (world time stops, then jumps on; 5.8, 2026-11-27), so it can't time a sequence. To catch the phases of a short
+  animation, slow the world instead (`slomo 0.2` on the server's PIE world; time dilation replicates to clients) and
+  take window screenshots about a second apart.
 - **`CaptureScene()` renders only when the main view does**, so with the editor minimized an exported capture is black.
   Window screenshots skip minimized windows too. `ue.py render` captures and reads back in the same call
   (`FlushRenderingCommands()`), so it works minimized.
@@ -192,9 +196,10 @@ Seen on 5.6 between 2026-10 and 2026-11 unless noted.
   `UpdateCameraManager` on every player controller). Its view comes from that client's `ServerUpdateCamera` reports: an
   `FVector_NetQuantize` (whole centimetres), sent at the network rate, a few frames late. Anything an `UpdateCamera`
   override does to its view target (placing first-person hands, say) must check `PCOwner->IsLocalController()`, or the
-  host moves remote players' parts from that stale, stepped view. Seen in a co-op vehicle game (UE 5.8, 2026-11-26): a seated
-  passenger's first-person hands, seen from the host, swung 0–50 cm along the vehicle at 30 km/h; walking players' stepped at the network
-  rate. Tell-tale sign: the "view" has whole-number coordinates that change every other frame.
+  host moves remote players' parts from that stale, stepped view. Seen in a co-op vehicle game (UE 5.8, 2026-11-26):
+  a seated passenger's first-person hands, seen from the host, swung 0–50 cm along the vehicle at 30 km/h; walking
+  players' stepped at the network rate. Tell-tale sign: the "view" has whole-number coordinates that change every
+  other frame.
 
 ### Replicating a growing list (`FFastArraySerializer`)
 
@@ -341,6 +346,13 @@ Seen on 5.6 between 2026-10 and 2026-11 unless noted.
   described as (normal, up, in) from a right-handed tool can come out mirrored in Unreal, one axis reversed. Build
   frames from two trusted vectors (`FRotationMatrix::MakeFromXZ`) and derive the third, rather than trusting all
   three labels. Seen with a Blender hand pose's grip frame, whose "up" pointed down (2026-11-25).
+- **`ACharacter::GetMovementBase()` is deprecated in 5.8** (warning C4996): use `GetMovementBaseObject()` (a `UObject`;
+  cast it to `UPrimitiveComponent`) or `GetMovementBaseInterfaceData()`. `ACharacter::BaseChange()` still fires when the
+  base changes (also when a stay-based-in-air character finally lets go of a moving floor).
+- **A spline mesh's cross-section follows the Hermite tangent.** To make the tube leave a socket exactly along an axis
+  (a sleeve into a cuff), keep that end's tangent along the axis and put any sag or swing into the other end's tangent:
+  the middle moves by (T0 − T1) / 8, so a bend B costs 8·B on one tangent. `SetEndScale` tapers the tube toward that
+  end (the scale is interpolated along the spline).
 - **Asset-registry class paths moved in UE 5.7:** `UserDefinedStruct` is `/Script/CoreUObject.UserDefinedStruct`, not
   `/Script/Engine`. An `ARFilter` on the old path silently finds nothing. `UserDefinedEnum` is still in
   `/Script/Engine`.
